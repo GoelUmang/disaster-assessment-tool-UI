@@ -1,0 +1,186 @@
+/* 
+Name: Umang Goel
+ASUid: 1226986269
+------- tokens ------- */
+:root{
+  --bg:#f9fafc;
+  --card:#fff;
+  --border:#dfe3e8;
+  --txt:#24313f;
+  --accent:#006dba;
+  --radius:8px;
+  --pad:20px; 
+  --shadow:0 1px 3px rgba(0,0,0,.06);
+
+
+  --bg-start:   #e3f2fd;
+  --bg-end:     #f9fafc;
+
+  /* a matching 3‑step color ramp */
+  --scale-low:  #ffffcc;
+  --scale-med:  #feb24c;
+  --scale-high: #f03b20;
+}
+
+*{box-sizing:border-box}
+html,body{
+  margin:0;
+  height:100%;
+  font-family:system-ui,sans-serif;
+  background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
+  color:var(--txt);
+  display:flex;
+  flex-direction:column
+  
+}
+
+/* ------- header ------- */
+header{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:var(--pad);
+  padding:var(--pad);
+  border-bottom:1px solid var(--border);
+  background:#f4f6f9
+}
+h1{
+  margin:0;
+  font-size:1.5rem;
+  font-weight:600
+}
+.controls{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  font-size:.9rem
+}
+.controls label{
+  display:flex;
+  flex-direction:column
+}
+.controls input{
+  width:88px;
+  padding:4px 6px;
+  border:1px solid var(--border);
+  border-radius:4px;
+  font-variant-numeric:tabular-nums
+}
+button{
+  border:1px solid var(--border);
+  background:var(--card);
+  border-radius:4px;
+  padding:4px 10px;
+  font-size:.8rem;
+  cursor:pointer
+}
+button:hover{
+  background:#e9eef4
+}
+
+#viz{
+  flex: 1 1 auto;
+  display: grid;
+  gap: var(--pad);
+  padding: var(--pad);
+
+  /* CHANGED: Increased minimum width of chart columns */
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); /* Was 340px */
+
+  /* CHANGED: Increased minimum height of chart rows */
+  grid-auto-rows: minmax(380px, 1fr); /* Was 380px */
+}
+.chart{
+  background: rgba(255,255,255,0.95);;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+
+  /* NEW — let the SVG stretch to the grid area  */
+  width: 100%;
+  height: 80%;
+}
+/* ------- chart text ------- */
+.title{
+  font:600 15px/1.2 system-ui,sans-serif;
+  fill:var(--txt);
+  text-anchor:middle
+}
+.axis-label{
+  font:600 12px system-ui,sans-serif;
+  fill:var(--txt);
+  text-anchor:middle
+}
+
+/* ------- tooltip ------- */
+.tooltip{
+  position:fixed;
+  pointer-events:none;
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  font-size:11px;
+  padding:6px 8px;
+  border-radius:6px;
+  white-space:nowrap;
+  opacity:0;
+  transition:opacity .12s
+}
+
+/* --- make sure every visible bar / dot is hoverable --- */
+svg rect,
+svg circle {
+  pointer-events: all !important;   /* override any inherited 'none' */
+}
+
+/*give a subtle glow on hover so users notice */
+svg rect:hover,
+svg circle:hover {
+  filter: brightness(1.2); /* This will make elements slightly brighter on hover */
+  cursor: pointer; /* Ensures the cursor changes to a pointer */
+}
+
+
+/* focus ring for keyboard nav */
+svg [tabindex="0"]:focus{
+  outline:3px solid var(--accent);
+  outline-offset:2px
+}
+
+/* … your existing variables … */
+
+#viz {
+  flex: 1 1 auto;
+  display: grid;
+  gap: var(--pad);
+  padding: var(--pad);
+  grid-template-columns: 55% 45%;
+  grid-template-rows: 1fr;
+}
+
+.side-charts {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  gap: var(--pad);
+}
+
+/* ensure charts fill their grid cells */
+.chart {
+  width: 100%;
+  height: 100%;
+}
+
+#layerControls {
+  font-size: 0.9rem;
+  padding: 0 8px;
+}
+#worldmap {
+  width: 100%;
+  height: 100%;
+}
+.model-selector {
+  font-family: system-ui, sans-serif;
+  background: transparent;
+  font-size: 0.75rem;
+}
