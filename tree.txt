@@ -1,0 +1,50 @@
+.
+├── clean
+│   └── merged_file_clean.csv
+├── data_cleaning.py
+├── features
+│   ├── 4005_model1.csv
+│   ├── 4005_model2.csv
+│   └── 4005_model3.csv
+├── index.html
+├── main.js
+├── merged_file_unique.csv
+├── models
+│   └── disaster-assessment-tool
+│       ├── assets
+│       │   ├── filtered_features
+│       │   └── full_features
+│       ├── data
+│       │   └── data_features.csv
+│       ├── final_model_cv_outputs
+│       │   ├── filtered_features
+│       │   └── full_features
+│       ├── importance_scores_v4b
+│       │   ├── instance_necessity_scores.csv
+│       │   ├── instance_sufficiency_scores.csv
+│       │   ├── source_necessity_scores.csv
+│       │   └── source_sufficiency_scores.csv
+│       ├── README.md
+│       ├── recourses
+│       │   ├── lollipop_0.png
+│       │   ├── lollipop_2.png
+│       │   ├── lollipop_396_target_0.png
+│       │   └── lollipop_396_target_2.png
+│       ├── repository -> /scratch/svishnu6/repository
+│       ├── requirements.txt
+│       ├── scripts
+│       │   ├── misc
+│       │   ├── necessity_sufficiency_instance_source_level_v4b.py
+│       │   ├── recourse_generate_v6.py
+│       │   └── train_models_v2.py
+│       └── venv
+│           ├── bin
+│           ├── include
+│           ├── lib
+│           ├── pyvenv.cfg
+│           └── share
+├── requirements.txt
+├── style.css
+└── tree.txt
+
+21 directories, 27 files

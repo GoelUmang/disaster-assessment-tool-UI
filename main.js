@@ -1,27 +1,19 @@
-/*Name: Umang Goel
-ASUid: 1226986269*/
-
 // main.js
 let allData, countiesTopo;
 const tooltip = d3.select("#tip");
-let selectedYear = null;
-let selectedModel = "model1";
-d3.select("#modelSelect").on("change", function() {
-  selectedModel = this.value;
-  drawFeatureBar(4005);  // redraw feature bar for FIPS 4005
-});
-
-// 1) LOAD CSV + COUNTY TOPOJSON IN PARALLEL
+// ────────────────────────────────────────────────────────────────────────────────
+// 1) LOAD data_features.csv + COUNTY TOPOJSON (no year filters anymore)
 Promise.all([
-  d3.csv("clean/merged_file_clean.csv", d3.autoType),
+  d3.csv("data_features.csv", d3.autoType),
   d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json")
 ]).then(([rows, us]) => {
-  allData      = rows;
+  allData      = rows;  // now allData has every row from data_features.csv
   countiesTopo = topojson.feature(us, us.objects.counties).features;
-  initFilters();
-  drawAll();
+  drawAll();           // jump straight to drawing—no initFilters()
 })
 .catch(err => console.error("Data load error:", err));
+
+
 
 function initEE() {
   ee.data.authenticateViaPopup(() => {
@@ -42,212 +34,6 @@ const DW_PALETTE = [
   'A59B8F','C4281B','D1D1D1','FFFFFF'
 ]
 
-// 2) SETUP YEAR FILTER CONTROLS
-function initFilters(){
-  const years = allData.map(d => d.Year);
-  const minY  = d3.min(years),
-        maxY  = d3.max(years);
-
-  // Start Year
-  d3.select("#yrStart")
-    .attr("min", minY).attr("max", maxY).property("value", minY)
-    .on("change", drawAll);
-
-  // End Year
-  d3.select("#yrEnd")
-    .attr("min", minY).attr("max", maxY).property("value", maxY)
-    .on("change", drawAll);
-
-  // Preset buttons
-  d3.selectAll(".preset button")
-    .on("click", function(){
-      const s = +this.dataset.start,
-            e = +this.dataset.end;
-      d3.select("#yrStart").property("value", s);
-      d3.select("#yrEnd"  ).property("value", e);
-      drawAll();
-    });
-}
-
-// 3) UTILITY: GET FILTERED DATA
-function getFiltered(){
-  const s = +d3.select("#yrStart").property("value"),
-        e = +d3.select("#yrEnd"  ).property("value");
-  return allData.filter(d => d.Year >= s && d.Year <= e);
-}
-
-// 4) REDRAW EVERYTHING
-function drawAll(){
-  const data = getFiltered();
-  drawHistogram(data);
-  drawBarChart  (data);
-  drawMap       (data);
-}
-
-// 5) HISTOGRAM: EVENTS PER YEAR
-
-function drawHistogram(data) {
-  const svg = d3.select("#yearCount"),
-        W   = svg.node().clientWidth,
-        H   = svg.node().clientHeight;
-  svg.selectAll("*").remove();
-
-  const byYear = d3.rollups(data, v=>v.length, d=>d.Year)
-                   .sort((a,b)=>a[0] - b[0]);
-
-  // scales
-  const x = d3.scaleBand()
-      .domain(byYear.map(d=>d[0]))
-      .range([60, W-30]).padding(0.1);
-  const y = d3.scaleLinear()
-      .domain([0, d3.max(byYear, d=>d[1])]).nice()
-      .range([H-40, 40]);
-
-  // axes
-  svg.append("g")
-     .attr("transform", `translate(0,${H-40})`)
-     .call(d3.axisBottom(x).tickFormat(d3.format("d")));
-
-  svg.append("g")
-     .attr("transform", `translate(60,0)`)
-     .call(d3.axisLeft(y));
-
-  // chart title
-  svg.append("text")
-     .attr("class","chart-title")
-     .attr("x", W/2).attr("y", 20)
-     .text("Events per Year");
-
-  // X‑axis label
-  svg.append("text")
-     .attr("class","axis-label")
-     .attr("x", (60 + (W-30)) / 2)
-     .attr("y", H - 5)
-     .text("Year");
-
-  // Y‑axis label
-  svg.append("text")
-     .attr("class","axis-label")
-     .attr("transform","rotate(-90)")
-     .attr("x", - (40 + (H-40)) / 2)
-     .attr("y", 15)
-     .text("Number of Events");
-
-  svg.selectAll("rect")
-    .data(byYear).join("rect")
-      .attr("x",      d => x(d[0]))
-      .attr("y",      d => y(d[1]))
-      .attr("width",  x.bandwidth())
-      .attr("height", d => H-40 - y(d[1]))
-      // highlight if this is the selected year
-      .attr("fill",   d => selectedYear === d[0] ? "#00ff66" : "#4e79a7")
-    .on("mouseover", (e,d) => {
-      tooltip
-        .style("opacity", 0.9)
-        .html(`<strong>${d[0]}</strong><br>${d[1]} events`)
-        .style("left", (e.pageX + 10) + "px")
-        .style("top",  (e.pageY - 28) + "px");
-      d3.select(e.currentTarget)
-        .attr("fill", "#663399"); //yelloe
-    })
-    .on("mouseout", (e,d) => {
-      tooltip.style("opacity", 0);
-      d3.select(e.currentTarget)
-        .attr("fill", selectedYear === d[0] ? "#663399" : "#4e79a7");
-    })
-    .on("click", (e,d) => {
-      // toggle selection
-      selectedYear = (selectedYear === d[0] ? null : d[0]);
-      drawAll();  // redraw both histogram and map
-    });
-}
-
-function drawBarChart(data) {
-  const svg = d3.select("#bar"),
-        W   = svg.node().clientWidth,
-        H   = svg.node().clientHeight;
-  svg.selectAll("*").remove();
-
-  // 1) Summarize & sort
-  const byCounty = d3.rollups(
-    data,
-    vs => d3.sum(vs, d => d["PropertyDmg(ADJ 2023)"]),
-    d  => d.CountyName
-  )
-  .sort((a,b) => b[1] - a[1])
-  .slice(0,15);
-
-  // 2) Margins & shrink factor
-  const left   = 90,
-        right  = 10,
-        top    = 40,
-        bottom = 40,
-        shrink = 0.9;               // keep 90% of the inner width
-  const innerW  = W - left - right;
-  const effW    = innerW * shrink;  // effective width
-
-  // 3) Scales
-  const x = d3.scaleLinear()
-      .domain([0, d3.max(byCounty, d=>d[1])])
-      .range([left, left + effW]);
-
-  const y = d3.scaleBand()
-      .domain(byCounty.map(d=>d[0]))
-      .range([top, H - bottom])
-      .padding(0.1);
-
-  // 4) Axes
-  svg.append("g")
-     .attr("transform", `translate(0,${H - bottom})`)
-     .call(d3.axisBottom(x).ticks(5));
-
-  svg.append("g")
-     .attr("transform", `translate(${left},0)`)
-     .call(d3.axisLeft(y));
-
-  // 5) Title
-  svg.append("text")
-     .attr("class","chart-title")
-     .attr("x", W/2).attr("y", top/2)
-     .attr("text-anchor","middle")
-     .text("Top 15 Counties by Property Damage");
-
-  // 6) X‑axis label
-  svg.append("text")
-     .attr("class","axis-label")
-     .attr("x", left + effW/2)
-     .attr("y", H - 6)
-     .text("Property Damage (Adj 2023 USD)");
-
-  // 7) Y‑axis label
-  svg.append("text")
-     .attr("class","axis-label")
-     .attr("transform","rotate(-90)")
-     .attr("x", - (top + (H - bottom)) / 2)
-     .attr("y", 14)
-     .text("County");
-
-  // 8) Bars
-  svg.selectAll("rect")
-    .data(byCounty).join("rect")
-      .attr("x",      left)
-      .attr("y",      d => y(d[0]))
-      .attr("width",  d => x(d[1]) - left)
-      .attr("height", y.bandwidth())
-      .attr("fill",   "#3182bd")
-    .on("mouseover", (e,d) => {
-      tooltip
-        .style("opacity", .9)
-        .html(`<strong>${d[0]}</strong><br>$${d3.format(",")(d[1])}`)
-        .style("left", (e.pageX+10)+"px")
-        .style("top",  (e.pageY-28)+"px");
-      d3.select(e.currentTarget).attr("fill","#f49e4c");
-    })
-    .on("mouseout", (e) => {
-      tooltip.style("opacity", 0);
-      d3.select(e.currentTarget).attr("fill","#3182bd");
-    });
-}
 // 7) CHOROPLETH: COUNTIES FOR SELECTED YEAR
 function drawMap(data) {
   const svg = d3.select("#map"),
@@ -255,102 +41,84 @@ function drawMap(data) {
         H   = svg.node().clientHeight;
   svg.selectAll("*").remove();
 
-  // 1) Projection + path
+  // 1) Projection + path generator
   const proj    = d3.geoAlbersUsa()
                     .translate([W/2, H/2])
                     .scale(1100);
   const pathGen = d3.geoPath().projection(proj);
 
-  // 2) Focus on the clicked year (or full range if none)
-  const yearData = selectedYear != null
-    ? allData.filter(d => d.Year === selectedYear)
-    : data;
-
-  // 3) Count events by FIPS (ensure numeric keys)
+  // 2) Count how many rows per FIPS (number of events or records per county)
   const counts = d3.rollups(
-    yearData,
+    data,           // data = allData from data_features.csv
     vs => vs.length,
-    d  => +d.County_FIPS
+    d  => String(d.FIPS).padStart(5, '0')  // ensure five‐digit string
   );
-  const countMap = new Map(counts);
+  // counts = [ [ "04005", 12 ], [ "06037", 7 ], … ]
 
-  // 4) Pick  counties for that set
-  const top15Ids = new Set(
-    counts
-      .sort((a,b) => b[1] - a[1])
-      .slice(0,18000)
-      .map(d => d[0])
-  );
+  const countMap = new Map(counts); 
+  // Map { "04005" → 12, "06037" → 7, … }
 
-  // 5) Build thresholds off the **max** count
-  const maxCount = d3.max(counts, ([,c]) => c) || 1;
-  const t1 = Math.floor(maxCount / 3);
-  const t2 = Math.floor((2 * maxCount) / 3);
+  // 3) Let’s pick a single “fill color” for any county that appears at least once.
+  //    If you want a heatmap by the raw count, you can replace this step with a colorScale.
+  //    For now, we’ll just do: present = blue; absent = #eee.
+  const presentColor = "#3182bd";  
+  const absentColor  = "#eee";
 
-  // 6) Color scale: ≤t1 = yellow, ≤t2 = orange, >t2 = red
-  const colorScale = d3.scaleThreshold()
-    .domain([t1, t2])
-    .range(["yellow","orange","red"]);
-
-  // 7) Draw the counties
+  // 4) Draw every county path
   svg.selectAll("path")
     .data(countiesTopo)
     .join("path")
       .attr("d", pathGen)
       .attr("fill", d => {
-        const c = countMap.get(+d.id) || 0;
-        return top15Ids.has(+d.id)
-          ? colorScale(c)
-          : "#eee";
+        // d.id is a string or number. We’ll treat it as a zero‐padded string:
+        const fips = String(d.id).padStart(5, '0');
+        return countMap.has(fips)
+          ? presentColor
+          : absentColor;
       })
       .attr("stroke", "#999")
       .attr("stroke-width", 1)
       .on("click", (e, d) => {
-        const fips = +d.id;
-        drawFeatureBar(fips);
-        if (fips === 4005) {
-          drawWorldMap();       // only for 4005
-        } else {
-          clearWorldMap();      // clear the right‐bottom pane
-        }
-      }).on("click", (e, countyFeature) => {
-        // 1. redraw the feature bar
-        drawFeatureBar(+countyFeature.id);
-        // 2. draw the dynamic world map FOR THAT county
-        drawWorldMap(countyFeature);
-      })
-    .on("mouseover", (e,d) => {
-      const id = +d.id, c = countMap.get(id) || 0;
-      tooltip
-        .style("opacity", 0.9)
-        .html(`<strong>FIPS ${id}</strong><br>${c} event${c===1?"":"s"}`)
-        .style("left", (e.pageX + 10) + "px")
-        .style("top",  (e.pageY - 28) + "px");
-      d3.select(e.currentTarget)
-        .attr("stroke", "#000")
-        .attr("stroke-width", 2);
-    })
-    .on("mouseout", (e,d) => {
-      tooltip.style("opacity", 0);
-      d3.select(e.currentTarget)
-        .attr("stroke", "#999")
-        .attr("stroke-width", 1);
-    });
+        // When you click a county, we want to draw its feature bar:
+        const clickedFips = String(d.id).padStart(5, '0');
+        drawFeatureBar(clickedFips);
 
-  // 8) Legend (with floored thresholds)
+        // If you still want to draw your dynamic world map, keep this block:
+        drawWorldMap(d); 
+        // else you can omit it.
+      })
+      .on("mouseover", (e, d) => {
+        const fips = String(d.id).padStart(5, '0');
+        const c = countMap.get(fips) || 0;
+        tooltip
+          .style("opacity", 0.9)
+          .html(`<strong>FIPS ${fips}</strong><br>${c} record${c===1?"":"s"}`)
+          .style("left", (e.pageX + 10) + "px")
+          .style("top",  (e.pageY - 28) + "px");
+        d3.select(e.currentTarget)
+          .attr("stroke", "#000")
+          .attr("stroke-width", 2);
+      })
+      .on("mouseout", (e, d) => {
+        tooltip.style("opacity", 0);
+        d3.select(e.currentTarget)
+          .attr("stroke", "#999")
+          .attr("stroke-width", 1);
+      });
+
+  // 5) (Optional) Legend: “Blue = county in data_features.csv; Light gray = not in data”
   const legend = svg.append("g")
-    .attr("transform", `translate(20, ${H - 80})`);
+    .attr("transform", `translate(20, ${H - 60})`);
 
   const legendData = [
-    { color:"yellow", label:`Low ≤ ${t1}` },
-    { color:"orange", label:`Med ≤ ${t2}` },
-    { color:"red",    label:`High > ${t2}` }
+    { color: presentColor, label: "County present in data" },
+    { color: absentColor,  label: "County not in data" }
   ];
 
   legend.selectAll("rect")
     .data(legendData)
     .join("rect")
-      .attr("x",   (d,i) => i * 100)
+      .attr("x",   (d,i) => i * 180)
       .attr("y",     0)
       .attr("width", 20)
       .attr("height",20)
@@ -359,116 +127,167 @@ function drawMap(data) {
   legend.selectAll("text")
     .data(legendData)
     .join("text")
-      .attr("x", (d,i) => i * 100 + 24)
+      .attr("x", (d,i) => i * 180 + 26)
       .attr("y", 14)
       .style("font-size","12px")
       .text(d => d.label);
 
-  // 9) Dynamic title
+  // 6) Title
   svg.append("text")
-    .attr("x", W/2).attr("y", 36)
-    .attr("text-anchor","middle")
-    .style("font-weight","600")
-    .text(
-      selectedYear != null
-        ? `Counties in ${selectedYear}`
-        : "Counties Overall"
-    );
+    .attr("x", W/2).attr("y", 32)
+    .attr("text-anchor", "middle")
+    .style("font-weight", "600")
+    .text("All Counties (from data_features.csv)");
 }
+
+function extractTopFeatures(row, n = 15) {
+  // 1) Collect all keys that start with "necessity_"
+  const featureData = [];
+  Object.keys(row).forEach(key => {
+    if (key.startsWith("necessity_")) {
+      // Remove the "necessity_" prefix
+      const featName = key.replace("necessity_", "");
+      // Convert the raw string to a number
+      const val = +row[key];
+      featureData.push({ feature: featName, value: val });
+    }
+  });
+
+  // 2) Sort descending by value
+  featureData.sort((a, b) => b.value - a.value);
+
+  // 3) Return the first n items (or fewer if there aren't n)
+  return featureData.slice(0, n);
+}
+
 
 function drawFeatureBar(fips) {
   const svg = d3.select("#bar"),
         W   = svg.node().clientWidth,
         H   = svg.node().clientHeight;
-  svg.selectAll("*").remove();
+  svg.selectAll("*").remove(); 
+  
+  
 
-  // load that county’s feature CSV
-  const modelSuffix = selectedModel;  // e.g., model2
-d3.csv(`features/${fips}_${modelSuffix}.csv`, d3.autoType).then(rows => {
-    // sort by rank ascending (1 highest)
-    rows.sort((a,b) => a.Rank - b.Rank);
 
-    const left   = 100,
-          right  = 10,
-          top    = 40,
-          bottom = 40;
-    const innerW = W - left - right;
+  // 1) Load the entire CSV of instance-level necessity scores
+  d3.csv("importance_scores_v4b/instance_necessity_scores.csv", d3.autoType)
+    .then(rawData => {
+      // 2) Find the single row whose "c" column matches the clicked FIPS
+      //    Coerce both to strings to avoid type mismatches.
+      //const row = rawData.find(d => String(d.FIPS) === String(fips));
+      const row = rawData.find(d => (+d.FIPS) === (+fips));
+      if (!row) {
+        svg.append("text")
+          .attr("x",  W / 2)
+          .attr("y",  H / 2)
+          .attr("text-anchor", "middle")
+          .style("fill", "darkred")
+          .text(`No necessity‐score data for FIPS ${fips}`);
+        return;
+      }
 
-    const x = d3.scaleLinear()
-        .domain([0, d3.max(rows, d => d.Rank)])    // ranks 1–15
-        .range([left, left + innerW]);
+      // 3) Extract the top 15 features by necessity value
+      const top15 = extractTopFeatures(row, 15);
+      // Now top15 is an array like:
+      //   [ { feature: "transition_1_0", value: 0.87 },
+      //     { feature: "News_Injuries",   value: 0.75 },
+      //     … up to 15 items … ]
 
-    const y = d3.scaleBand()
-        .domain(rows.map(d => d.Feature))
-        .range([top, H - bottom])
+      // 4) If there are no "necessity_" keys at all, showing a message
+      if (top15.length === 0) {
+        svg.append("text")
+          .attr("x",  W / 2)
+          .attr("y",  H / 2)
+          .attr("text-anchor", "middle")
+          .style("fill", "darkred")
+          .text(`No "necessity_" features found for FIPS ${fips}`);
+        return;
+      }
+
+      // 5) Define margins & inner dimensions
+      const margin = { top: 40, right: 20, bottom: 60, left: 100 },
+            innerW = W - margin.left - margin.right,
+            innerH = H - margin.top  - margin.bottom;
+
+      // 6) Build scales based on the top15 data
+      const xScale = d3.scaleLinear()
+        .domain([0, d3.max(top15, d => d.value) || 1])
+        .range([margin.left, margin.left + innerW]);
+
+      const yScale = d3.scaleBand()
+        .domain(top15.map(d => d.feature))
+        .range([margin.top, margin.top + innerH])
         .padding(0.1);
 
+      // 7) Draw X-axis at the bottom
+      svg.append("g")
+        .attr("transform", `translate(0, ${margin.top + innerH})`)
+        .call(d3.axisBottom(xScale).ticks(5).tickFormat(d3.format(".2f")));
 
-    // Embed dropdown inside the SVG using foreignObject
-svg.append("foreignObject")
-.attr("x", 10)
-.attr("y", 10)
-.attr("width", 200)
-.attr("height", 40)
-.html(`
-  <div xmlns="http://www.w3.org/1999/xhtml" class="model-selector">
-    <label for="modelSelect" style="font-size: 0.85rem;">Select Model:</label>
-    <select id="modelSelect" style="margin-left: 5px;">
-      <option value="model1" ${selectedModel === "model1" ? "selected" : ""}>Model 1</option>
-      <option value="model2" ${selectedModel === "model2" ? "selected" : ""}>Model 2</option>
-      <option value="model3" ${selectedModel === "model3" ? "selected" : ""}>Model 3</option>
-    </select>
-  </div>
-`);
+      // 8) Draw Y-axis on the left
+      svg.append("g")
+        .attr("transform", `translate(${margin.left}, 0)`)
+        .call(d3.axisLeft(yScale));
 
-// Rebind listener to update chart on change
-d3.select("#modelSelect").on("change", function () {
-selectedModel = this.value;
-drawFeatureBar(fips);
-});
-  
-    // axes
+      // 9) Chart title
+      svg.append("text")
+        .attr("class", "chart-title")
+        .attr("x", (W / 2) - 1)
+        .attr("y", margin.top / 2)
+        .attr("text-anchor", "middle")
+        .text(`Top 15 Necessity Features for FIPS ${fips}`);
 
-    svg.append("g")
-       .attr("transform", `translate(0,${H - bottom})`)
-       .call(d3.axisBottom(x).ticks(5).tickFormat(d=>`#${d}`));
+      // 10) X-axis label
+      svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", margin.left + innerW / 2)
+        .attr("y", margin.top + innerH + 50)
+        .attr("text-anchor", "middle")
+        .text("Necessity Value (0–1)");
 
-    svg.append("g")
-       .attr("transform", `translate(${left},0)`)
-       .call(d3.axisLeft(y));
+      // 11) Y-axis label (vertical)
+      svg.append("text")
+        .attr("class", "axis-label")
+        .attr("transform", "rotate(-90)")
+        .attr("x", - (margin.top + innerH / 2))
+        .attr("y", margin.left - 80)
+        .attr("text-anchor", "middle")
+        .text("Feature");
 
-    // title
-    svg.append("text")
-       .attr("class","chart-title")
-       .attr("x", W/2).attr("y", top/2)
-       .text(`Top 15 Features of County ${fips}`);
+      // 12) Draw the 15 bars
+      svg.selectAll("rect")
+        .data(top15)
+        .join("rect")
+          .attr("x",      d => margin.left)
+          .attr("y",      d => yScale(d.feature))
+          .attr("width",  d => xScale(d.value) - margin.left)
+          .attr("height", yScale.bandwidth())
+          .attr("fill",   "#3182bd")
+        .on("mouseover", (e, d) => {
+          tooltip
+            .style("opacity", 0.9)
+            .html(`<strong>${d.feature}</strong><br>Value: ${d3.format(".2f")(d.value)}`)
+            .style("left", (e.pageX + 8) + "px")
+            .style("top",  (e.pageY - 28) + "px");
+          d3.select(e.currentTarget).attr("fill", "#f49e4c");
+        })
+        .on("mouseout", () => {
+          tooltip.style("opacity", 0);
+          d3.selectAll("#bar rect").attr("fill", "#3182bd");
+        });
 
-    // bars
-    svg.selectAll("rect")
-      .data(rows).join("rect")
-        .attr("x",      left)
-        .attr("y",      d => y(d.Feature))
-        .attr("width",  d => x(d.Rank) - left)
-        .attr("height", y.bandwidth())
-        .attr("fill",   "#3182bd")
-      .on("mouseover", (e,d) => {
-        tooltip
-          .style("opacity", .9)
-          .html(`<strong>${d.Feature}</strong><br>Rank ${d.Rank}`)
-          .style("left", (e.pageX+10)+"px")
-          .style("top",  (e.pageY-28)+"px");
-        d3.select(e.currentTarget).attr("fill","#f49e4c");
-      })
-      .on("mouseout", () => {
-        tooltip.style("opacity", 0);
-        d3.selectAll("#bar rect").attr("fill","#3182bd");
-      });
-
-  }).catch(err => {
-    console.error("Could not load features for", fips, err);
-  });
+    })
+    .catch(err => {
+      console.error("Could not load necessity_scores CSV:", err);
+      svg.append("text")
+        .attr("x",  W / 2)
+        .attr("y",  H / 2)
+        .attr("text-anchor", "middle")
+        .style("fill", "darkred")
+        .text("Error loading necessity‐score data.");
+    });
 }
-
 
 function clearWorldMap() {
   d3.select("#layerControls").html("");
@@ -539,12 +358,8 @@ function drawWorldMap(countyFeature) {
 
 // ------------- clear on year/change --------------
 function drawAll() {
-  const data = getFiltered();
-  drawMap(data);
+  drawMap(allData);
   d3.select("#bar").selectAll("*").remove();
-  d3.select("#layerControls").html("");
-  d3.select("#worldmap").html("");
-  drawHistogram(data);
 }
 
 // your existing boot call:
