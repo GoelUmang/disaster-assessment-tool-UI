@@ -14,27 +14,7 @@ Promise.all([
 .catch(err => console.error("Data load error:", err));
 
 
-
-function initEE() {
-  ee.data.authenticateViaPopup(() => {
-    ee.initialize(null, null, () => {
-      console.log("Earth Engine initialized");
-    }, err => console.error("EE init error:", err));
-  }, {scope: "https://www.googleapis.com/auth/earthengine.readonly"});
-}
-gapi.load("client:auth2", initEE);
-
-// ---------------- Dynamic World config ------------
-const DW_CLASSES = [
-  'water','trees','grass','flooded_vegetation','crops',
-  'shrub_and_scrub','built','bare','snow_and_ice'
-]
-const DW_PALETTE = [
-  '419bdf','397d49','88b053','FDD163','E49635',
-  'A59B8F','C4281B','D1D1D1','FFFFFF'
-]
-
-// 7) CHOROPLETH: COUNTIES FOR SELECTED YEAR
+// CHOROPLETH: COUNTIES FOR SELECTED YEAR
 function drawMap(data) {
   const svg = d3.select("#map"),
         W   = svg.node().clientWidth,
@@ -84,7 +64,7 @@ function drawMap(data) {
         drawFeatureBar(clickedFips);
 
         // If you still want to draw your dynamic world map, keep this block:
-        drawWorldMap(d); 
+        //drawWorldMap(d); 
         // else you can omit it.
       })
       .on("mouseover", (e, d) => {
@@ -167,8 +147,6 @@ function drawFeatureBar(fips) {
         H   = svg.node().clientHeight;
   svg.selectAll("*").remove(); 
   
-  
-
 
   // 1) Load the entire CSV of instance-level necessity scores
   d3.csv("importance_scores_v4b/instance_necessity_scores.csv", d3.autoType)
@@ -292,68 +270,6 @@ function drawFeatureBar(fips) {
 function clearWorldMap() {
   d3.select("#layerControls").html("");
   d3.select("#worldmap").selectAll("*").remove();
-}
-
-
-// Called from your map-click handler:
-function drawWorldMap(countyFeature) {
-  console.log("▶️ drawWorldMap for FIPS", countyFeature.id);
-  // 1) clear previous
-  d3.select("#layerControls").html("");
-  if (window.dwMap) {
-    window.dwMap.remove();
-    window.dwMap = null;
-  }
-
-  // 2) build checkboxes
-  const ctrl = d3.select("#layerControls")
-    .html("<strong>Toggle Layers:</strong><br/>");
-  DW_CLASSES.forEach(c => {
-    ctrl.append("label")
-        .style("margin","0 8px 4px 0")
-        .html(`<input type="checkbox" class="dw-chk" value="${c}" checked> ${c}`);
-  });
-
-  // 3) Leaflet map zoomed to county
-  const [[minLon,minLat],[maxLon,maxLat]] = d3.geoBounds(countyFeature);
-  const sw = [minLat, minLon], ne = [maxLat, maxLon];
-  const map = L.map("worldmap", { attributionControl: false, zoomControl: false })
-               .fitBounds([sw,ne]);
-  window.dwMap = map;
-
-  // 4) draw county outline
-  L.geoJSON(countyFeature, {
-    style: { color: "#999", weight: 1, fillColor: "#eee", fillOpacity: 1 }
-  }).addTo(map);
-
-  // 5) fetch latest DW image
-  const dwImg = ee.ImageCollection("GOOGLE/DYNAMICWORLD/V1")
-    .filterBounds(ee.Feature(countyFeature))
-    .sort("system:time_start", false)
-    .first()
-    .select("label")
-    .visualize({min:0,max:8,palette:DW_PALETTE});
-
-  // 6) get tile URL and add layer
-  ee.data.getMapId({image: dwImg, format: "png"}, info => {
-    const url = info.tile_fetcher.url_format;
-    const layer = L.tileLayer(url, { opacity: 0.8 }).addTo(map);
-
-    // 7) wire up checkboxes to re-visualize
-    d3.selectAll(".dw-chk").on("change", () => {
-      const sel = new Set();
-      d3.selectAll(".dw-chk:checked").each(function(){ sel.add(this.value); });
-
-      // recolor: classes not selected → transparent
-      const palette = DW_CLASSES.map((c,i) =>
-        sel.has(c) ? DW_PALETTE[i] : "#00000000"
-      );
-      const newVis = dwImg.visualize({min:0,max:8,palette});
-      ee.data.getMapId({image:newVis, format:"png"}, nfo => {
-        layer.setUrl(nfo.tile_fetcher.url_format);
-      });
-    });
-  }, err => console.error("getMapId error:", err));
 }
 
 // ------------- clear on year/change --------------
