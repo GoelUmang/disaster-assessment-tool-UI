@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>US Hazard-Loss Explorer</title>
+  <title>Disaster Bench</title>
 
   <!-- your CSS -->
   <link rel="stylesheet" href="style.css"/>
@@ -12,39 +12,19 @@
   <script src="https://d3js.org/d3.v7.min.js" defer></script>
   <script src="https://d3js.org/topojson.v3.min.js" defer></script>
 
-  <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    defer
-  ></script>
-
-  <!-- Google APIs & Earth Engine -->
-  <script src="https://apis.google.com/js/api.js" defer></script>
-  <script
-    src="https://cdn.jsdelivr.net/npm/earthengine-api@0.1/ee.js"
-    defer
-  ></script>
-
   <!-- your JS -->
   <script src="main.js" defer></script>
 </head>
 
 <body>
   <header>
-    <h1>US Hazard-Loss Explorer</h1>
+    <h1>Disaster Bench</h1>
     <nav class="controls">
-      <label>Start Year <input id="yrStart" type="number"/></label>
-      <label>End Year   <input id="yrEnd"   type="number"/></label>
-      <div class="preset">
-        <button data-start="2014" data-end="2023">Last 10 yrs</button>
-        <button data-start="2014" data-end="2023">20 yrs</button>
-        <button data-start="2014" data-end="2023">All</button>
-      </div>
+      <a href="index.html" class="btn active">Attribution Score</a>
+      <a href="simulation.html" class="btn">Simulation through intervention</a>
+      <a href="attribution.html" class="btn">Attribution Score</a>
     </nav>
+    
   </header>
 
   <main id="viz">
@@ -53,15 +33,8 @@
 
     <!-- Right: features bar + Dynamic World panel -->
     <div class="side-charts">
-      <!-- Add this model selector -->
-      
-    
       <svg id="bar" class="chart" role="img"></svg>
-    
-      <div id="worldmap-container">
-        <div id="layerControls"></div>
-        <div id="worldmap" class="chart"></div>
-      </div>
+
     </div>
   </main>
 
