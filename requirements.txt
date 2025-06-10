@@ -1,14 +1,2 @@
 pandas>=1.5.0
 numpy>=1.23.0
-
-```
-
-├── clean
-│   └── merged_file_clean.csv
-├── data_cleaning.py
-├── index.html
-├── main.js
-├── merged_file_unique.csv
-├── style.css
-
-```

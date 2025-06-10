@@ -1,1 +1,7 @@
 merged_file_unique.csv
+
+
+# venv
+.venv
+py310_venv
+
