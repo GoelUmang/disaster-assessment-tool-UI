@@ -21,8 +21,8 @@
     <h1>Disaster Bench</h1>
     <nav class="controls">
       <a href="index.html" class="btn active">Attribution Score</a>
-      <a href="simulation.html" class="btn">Simulation through intervention</a>
-      <a href="attribution.html" class="btn">Attribution Score</a>
+      <a href="simulation.html" class="btn">Simulation Through Intervention</a>
+      <a href="algorithmic_recouse.html" class="btn">Algorithmic recourse</a>
     </nav>
     
   </header>
@@ -32,10 +32,47 @@
     <svg id="map" class="chart" role="img"></svg>
 
     <!-- Right: features bar + Dynamic World panel -->
-    <div class="side-charts">
+    <!-- <div class="side-charts">
       <svg id="bar" class="chart" role="img"></svg>
 
+    </div> -->
+    <div class="side-charts">
+      <div id="bar-container">
+        <!-- 1) Controls row -->
+        <div class="bar-controls">
+          <!-- Feature checkboxes dropdown -->
+          <div class="dropdown" id="feature-dropdown">
+            <button class="dropbtn">Features ▾</button>
+            <div class="dropdown-content">
+              <!-- checkboxes populated dynamically -->
+            </div>
+          </div>
+    
+          <!-- Sources checkboxes dropdown -->
+          <div class="dropdown" id="source-dropdown">
+            <button class="dropbtn">Sources ▾</button>
+            <div class="dropdown-content">
+              <!-- checkboxes populated dynamically -->
+            </div>
+          </div>
+    
+          <!-- Feature-group selector dropdown -->
+          <div class="dropdown" id="group-dropdown">
+            <button class="dropbtn">Feature Groups ▾</button>
+            <div class="dropdown-content">
+              <!-- single-select or checkboxes for groups -->
+            </div>
+          </div>
+        </div>
+    
+        <!-- 2) Your existing bar chart -->
+        <svg id="bar" class="chart" role="img"></svg>
+      </div>
     </div>
+    
+
+
+
   </main>
 
   <div id="tip" class="tooltip"></div>
