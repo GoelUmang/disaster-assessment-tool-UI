@@ -1,6 +1,21 @@
-// main.js
+// File name: main.js
+// File description: contains script to chloropeth map used on pages
+
 let allData, countiesTopo;
+let mapExist = true, barExist = true;
 const tooltip = d3.select("#tip");
+
+// make sure #map and #bar exists - do a check and put to boolean vars
+if (d3.select('#map').empty()) {
+  console.warn("#map does not exist.");
+  mapExist = false;
+  // all pages should have a chloro map, return if none?
+}
+if (d3.select('#bar').empty()) {
+  console.warn("#bar does not exist.");
+  barExist = false;
+}
+
 // ────────────────────────────────────────────────────────────────────────────────
 // 1) LOAD data_features.csv + COUNTY TOPOJSON (no year filters anymore)
 Promise.all([
@@ -16,6 +31,8 @@ Promise.all([
 
 // CHOROPLETH: COUNTIES FOR SELECTED YEAR
 function drawMap(data) {
+  if (!mapExist) { return; } // return if #map does not exist
+  
   const svg = d3.select("#map"),
         W   = svg.node().clientWidth,
         H   = svg.node().clientHeight;
@@ -61,14 +78,31 @@ function drawMap(data) {
       .on("click", (e, d) => {
         // When you click a county, we want to draw its feature bar:
         const clickedFips = String(d.id).padStart(5, '0');
-        drawFeatureBar(clickedFips);
+        console.log("Clicked FIPS:", clickedFips);
 
+        // Before we do anything else, check that #map still exists
+        const mapElemt = document.getElementById("map");
+        if (!mapElemt) {
+          console.warn("#map is missing before calling drawFeatureBar");
+          return;
+        }
+
+        try {
+          drawFeatureBar();
+
+        } catch (err) {
+          console.warn("Error from drawFeatureBar upon click on #map svg");
+        }
+
+      
+        drawAll();
         // If you still want to draw your dynamic world map, keep this block:
         //drawWorldMap(d); 
         // else you can omit it.
       })
       .on("mouseover", (e, d) => {
         const fips = String(d.id).padStart(5, '0');
+        // console.log("Drawing feature bar for:", fips);
         const c = countMap.get(fips) || 0;
         tooltip
           .style("opacity", 0.9)
@@ -142,6 +176,8 @@ function extractTopFeatures(row, n = 15) {
 
 
 function drawFeatureBar(fips) {
+  if (!barExist) { return ; } // return if #bar does not exist
+
   const svg = d3.select("#bar"),
         W   = svg.node().clientWidth,
         H   = svg.node().clientHeight;
@@ -267,6 +303,9 @@ function drawFeatureBar(fips) {
     });
 }
 
+
+
+
 function clearWorldMap() {
   d3.select("#layerControls").html("");
   d3.select("#worldmap").selectAll("*").remove();
@@ -274,7 +313,11 @@ function clearWorldMap() {
 
 // ------------- clear on year/change --------------
 function drawAll() {
+  console.log("Redrawing #map and clearing #bar");
+  if (!mapExist) { return; } // return if #map does not exist
   drawMap(allData);
+
+  if (!barExist) { return; } // return if #bar does not exist
   d3.select("#bar").selectAll("*").remove();
 }
 
@@ -283,3 +326,18 @@ drawAll();
 // ensure all three charts re‑render on window resize
 window.addEventListener("resize", drawAll);
 
+
+// Test 
+
+// const mapElemt = document.getElementById("map");
+// if (!mapElemt) {
+//   console.warn("#map element is missing after click!");
+// } else {
+//   console.log("#map still exists after click.");
+// }
+
+// console.log("Is #map still visible?", d3.select("#map").style("display"));
+// console.log("SVG child count:", d3.select("#map").node().childElementCount);
+
+// const svg = document.querySelector("#map");
+// console.log("SVG size:", svg.clientWidth, svg.clientHeight);

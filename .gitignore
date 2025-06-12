@@ -1,11 +1,8 @@
 merged_file_unique.csv
-<<<<<<< HEAD
 
+old.js
 
 # venv
 .venv
 py310_venv
 
-=======
-.venv
->>>>>>> ba17f47 (remove the dynamic world chart)
