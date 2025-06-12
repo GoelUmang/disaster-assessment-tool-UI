@@ -3,8 +3,18 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Attribution score</title>
+  <title>Disaster Bench</title>
+
+  <!-- CSS -->
   <link rel="stylesheet" href="style.css"/>
+
+  <!-- D3 & TopoJSON -->
+  <script src="https://d3js.org/d3.v7.min.js" defer></script>
+  <script src="https://d3js.org/topojson.v3.min.js" defer></script>
+
+  <!-- JS -->
+  <script src="main.js" defer></script>
+  <script src="attribution.html.js" defer></script>
 </head>
 <body>
   <header>
@@ -15,9 +25,31 @@
       <a href="attribution.html" class="btn active">Attribution Score</a>
     </nav>
   </header>
-  <main id="viz">
-    <!-- duplicate of index.html’s attribution chart goes here later -->
-    <p style="padding:20px; font-style:italic;">Page under construction…</p>
+
+  <main id="viz">    
+    <!-- Left: US county choropleth;  stolen from index.html -->
+    <div class="left-panel">
+      <svg id="map" class="chart" role="img"></svg>
+    </div>
+
+
+    <!-- Right: feature, source, barchart -->
+    <div class="right-panel">
+      <!--  TODO : duplicate of index.html’s attribution chart goes here later -->
+      
+      <!-- <div class="barchart">
+        <div style="width: 100%; height: 100%; border: 1px solid black;">
+          <h2>Barchart</h2>
+          <div class="barchart-content">
+            <p>Barchart content</p>
+          </div>
+        </div>
+      </div> -->
+    </div>
+    <!-- right panel end -->
+
+
+    <div id="tip" class="tooltip"></div>
   </main>
 </body>
 </html>

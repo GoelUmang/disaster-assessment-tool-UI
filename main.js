@@ -32,7 +32,7 @@ Promise.all([
 // CHOROPLETH: COUNTIES FOR SELECTED YEAR
 function drawMap(data) {
   if (!mapExist) { return; } // return if #map does not exist
-  
+
   const svg = d3.select("#map"),
         W   = svg.node().clientWidth,
         H   = svg.node().clientHeight;
@@ -79,23 +79,8 @@ function drawMap(data) {
         // When you click a county, we want to draw its feature bar:
         const clickedFips = String(d.id).padStart(5, '0');
         console.log("Clicked FIPS:", clickedFips);
-
-        // Before we do anything else, check that #map still exists
-        const mapElemt = document.getElementById("map");
-        if (!mapElemt) {
-          console.warn("#map is missing before calling drawFeatureBar");
-          return;
-        }
-
-        try {
-          drawFeatureBar();
-
-        } catch (err) {
-          console.warn("Error from drawFeatureBar upon click on #map svg");
-        }
-
-      
-        drawAll();
+        
+        drawFeatureBar();
         // If you still want to draw your dynamic world map, keep this block:
         //drawWorldMap(d); 
         // else you can omit it.
