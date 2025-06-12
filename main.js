@@ -1,14 +1,24 @@
 // main.js
+
+// returns true if the selector exists on the current page
+function has(sel) {
+  return document.querySelector(sel) !== null;
+}
+
 let allData, countiesTopo;
+let recourseData = [];          
 const tooltip = d3.select("#tip");
 // ────────────────────────────────────────────────────────────────────────────────
 // 1) LOAD data_features.csv + COUNTY TOPOJSON (no year filters anymore)
 Promise.all([
   d3.csv("data_features.csv", d3.autoType),
-  d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json")
-]).then(([rows, us]) => {
+  d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json"),
+  d3.csv("dummy_algo.csv",     d3.autoType)
+
+]).then(([rows, us, tempRows]) => {
   allData      = rows;  // now allData has every row from data_features.csv
   countiesTopo = topojson.feature(us, us.objects.counties).features;
+  recourseData = tempRows;
   drawAll();           // jump straight to drawing—no initFilters()
 })
 .catch(err => console.error("Data load error:", err));
@@ -59,14 +69,17 @@ function drawMap(data) {
       .attr("stroke", "#999")
       .attr("stroke-width", 1)
       .on("click", (e, d) => {
-        // When you click a county, we want to draw its feature bar:
-        const clickedFips = String(d.id).padStart(5, '0');
-        drawFeatureBar(clickedFips);
+        const fips = String(d.id).padStart(5, "0");
+      
+        if (has("#bar"))        drawFeatureBar(fips);      // Attribution page only
+        if (has("#instance-data")) updateDataDisplay(fips); // Recourse page only
+        if (has("#user-input"))    updateUserInput(fips);   // Recourse page only
 
-        // If you still want to draw your dynamic world map, keep this block:
-        //drawWorldMap(d); 
-        // else you can omit it.
+        const row = recourseData.find(r=>String(r.FIPS).padStart(5,"0")===fips);
+  const modelSev = row ? row.severity : "low";   // fallback demo value
+  drawSeverityChart(modelSev, modelSev);
       })
+    
       .on("mouseover", (e, d) => {
         const fips = String(d.id).padStart(5, '0');
         const c = countMap.get(fips) || 0;
@@ -120,7 +133,7 @@ function drawMap(data) {
     .text("All Counties (from data_features.csv)");
 }
 
-function extractTopFeatures(row, n = 15) {
+function extractTopFeatures(row, n = 20) {
   // 1) Collect all keys that start with "necessity_"
   const featureData = [];
   Object.keys(row).forEach(key => {
@@ -142,12 +155,13 @@ function extractTopFeatures(row, n = 15) {
 
 
 function drawFeatureBar(fips) {
+  if (!has("#bar")) return;
   const svg = d3.select("#bar"),
         W   = svg.node().clientWidth,
         H   = svg.node().clientHeight;
   svg.selectAll("*").remove(); 
   
-
+  
   // 1) Load the entire CSV of instance-level necessity scores
   d3.csv("importance_scores_v4b/instance_necessity_scores.csv", d3.autoType)
     .then(rawData => {
@@ -164,9 +178,9 @@ function drawFeatureBar(fips) {
           .text(`No necessity‐score data for FIPS ${fips}`);
         return;
       }
-
+      n = 20
       // 3) Extract the top 15 features by necessity value
-      const top15 = extractTopFeatures(row, 15);
+      const top15 = extractTopFeatures(row, n);
       // Now top15 is an array like:
       //   [ { feature: "transition_1_0", value: 0.87 },
       //     { feature: "News_Injuries",   value: 0.75 },
@@ -214,7 +228,7 @@ function drawFeatureBar(fips) {
         .attr("x", (W / 2) - 1)
         .attr("y", margin.top / 2)
         .attr("text-anchor", "middle")
-        .text(`Top 15 Necessity Features for FIPS ${fips}`);
+        .text(`Top ${n} Necessity Features for FIPS ${fips}`);
 
       // 10) X-axis label
       svg.append("text")
@@ -271,6 +285,151 @@ function clearWorldMap() {
   d3.select("#layerControls").html("");
   d3.select("#worldmap").selectAll("*").remove();
 }
+
+// ─── Populate Feature & Group dropdowns ────────────────────────────────────
+d3.csv('models/disaster-assessment-tool/assets/groupings/feature_groupings.csv')
+  .then(rows => {
+    if (!rows.length) return;
+
+    // auto-detect the first two columns
+    const cols = Object.keys(rows[0]);
+    const featKey  = cols[0];  // column A
+    const groupKey = cols[1];  // column B
+
+    // 1) Features: one checkbox per row, in #feature-dropdown
+    const featCont = d3.select('#feature-dropdown .dropdown-content');
+    rows.forEach(r => {
+      const val = r[featKey];
+      const id  = `feat-${val.replace(/\W+/g,'_')}`;
+      const lbl = featCont.append('label').attr('for', id);
+      lbl.append('input')
+         .attr('type', 'checkbox')
+         .attr('id', id)
+         .attr('value', val);
+      lbl.append('span').text(` ${val}`);
+    });
+
+    // 2) Feature Groups: unique values, in #group-dropdown
+    const uniqueGroups = Array.from(new Set(rows.map(r => r[groupKey])));
+    const grpCont = d3.select('#group-dropdown .dropdown-content');
+    uniqueGroups.forEach(g => {
+      const id = `group-${g.replace(/\W+/g,'_')}`;
+      const lbl = grpCont.append('label').attr('for', id);
+      lbl.append('input')
+         .attr('type', 'checkbox')
+         .attr('id', id)
+         .attr('value', g);
+      lbl.append('span').text(` ${g}`);
+    });
+  })
+  .catch(err => console.error('Failed to load grouping CSV:', err));
+
+// 🔁  replace ALL copies of updateDataDisplay() with exactly ONE copy
+function updateDataDisplay(fips) {
+  if (!has("#instance-data")) return;
+  // make sure both sides are numbers OR both are 5-digit strings
+  const row = recourseData.find(r => +r.FIPS === +fips);   // <─ coercion
+
+  const box = d3.select("#instance-data");
+  box.selectAll("p").remove();
+
+  if (!row) {
+    box.append("p").text(`No data for FIPS ${fips}`);
+  } else {
+    box.append("p").text(`Severity: ${row.severity}`);
+  }
+}
+
+  
+  
+function updateUserInput(fips) {
+  if (!has("#user-input")) return; 
+  const row = recourseData.find(r => String(r.FIPS).padStart(5,"0") === fips);
+  const container = d3.select("#user-input");
+
+  container.selectAll("label, select, p").remove();
+
+  if (!row) {
+    container.append("p").text(`No editable data for FIPS ${fips}`);
+    return;
+  }
+
+  const levels = ["low","medium","high"];
+
+  container.append("label")
+           .attr("for","severity-select")
+           .text("Set severity: ");
+
+  container.append("select")
+           .attr("id","severity-select")
+           .selectAll("option")
+           .data(levels)
+           .join("option")
+             .attr("value", d => d)
+             .property("selected", d => d === row.severity) // pre-select CSV value
+             .text(d => d.charAt(0).toUpperCase() + d.slice(1))
+             .on("change", function(){
+              const userSev = this.value;
+              console.log(`User set ${fips} → ${userSev}`);
+              drawSeverityChart(row.severity, userSev);    // live update
+            });
+}
+
+
+// ─── Severity helpers ────────────────────────────────────────────
+const sevScale = { low: 1, medium: 2, high: 3 };
+const sevLabels = ["Low","Medium","High"];
+
+/**
+ * Draw/refresh the 2-bar comparison.
+ * @param {string} modelS  severity from CSV  ("low"|"medium"|"high")
+ * @param {string} userS   severity from dropdown (same set)
+ */
+function drawSeverityChart(modelS, userS){
+  if(!has("#chart")) return;                         // wrong page
+
+  const W = 200, H = 160, margin = {t:20,r:20,b:30,l:40};
+
+  // convert to numeric
+  const data = [
+    {src:"Model", val: sevScale[modelS]},
+    {src:"User",  val: sevScale[userS]}
+  ];
+
+  // root
+  const box   = d3.select("#chart");
+  box.selectAll("*").remove();                       // clear previous
+  const svg   = box.append("svg")
+                   .attr("width",  W)
+                   .attr("height", H);
+
+  // scales
+  const x = d3.scaleBand()
+              .domain(data.map(d=>d.src))
+              .range([margin.l, W-margin.r])
+              .padding(0.35);
+  const y = d3.scaleLinear()
+              .domain([0,3]).nice()
+              .range([H-margin.b, margin.t]);
+
+  // axes
+  svg.append("g").attr("transform",`translate(0,${H-margin.b})`)
+     .call(d3.axisBottom(x));
+  svg.append("g").attr("transform",`translate(${margin.l},0)`)
+     .call(d3.axisLeft(y).ticks(3)
+                        .tickFormat(d=>sevLabels[d-1]));
+
+  // bars
+  svg.selectAll("rect")
+     .data(data)
+     .join("rect")
+       .attr("x", d=>x(d.src))
+       .attr("y", d=>y(d.val))
+       .attr("width", x.bandwidth())
+       .attr("height", d=>y(0)-y(d.val))
+       .attr("fill", "#3182bd");
+}
+
 
 // ------------- clear on year/change --------------
 function drawAll() {
