@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Disaster Bench – Algorithmic recourse</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css"/>
+  <script src="https://d3js.org/d3.v7.min.js"     defer></script>
+  <script src="https://d3js.org/topojson.v3.min.js" defer></script>
+  <script src="main.js"                           defer></script>
+  <script src="nav_control.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>Disaster Bench</h1>
+    <nav class="controls">
+      <a href="index.html" class="nav-btn">Attribution Score</a>
+      <a href="simulation.html" class="nav-btn">Simulation through intervention</a>
+      <a href="algorithmic_recouse.html" class="nav-btn">Algorithmic recourse</a>
+      
+    </nav>
+  </header>
+
+  <main id="viz">
+    <!-- left: same choropleth -->
+    <svg id="map" class="chart" role="img"></svg>
+
+    <!-- right: 2×2 recourse panel -->
+    <div class="side-charts">
+      <div class="recourse-panel">
+        <!-- 1) display row from temp.csv -->
+        <!-- …your choropleth and nav… -->
+        <div id="instance-data" class="box">
+  <h3>Instance Data</h3>
+</div>
+
+<div id="user-input"      class="box">
+  <h3>Edit Feature</h3>
+</div>
+
+<div id="chart" class="chart"></div>
+
+      </div>
+    </div>
+  </main>
+
+  <div id="tip" class="tooltip"></div>
+</body>
+</html>
