@@ -1,6 +1,6 @@
-importance_scores_v4b
 merged_file_unique.csv
-data_features.csv
+
+.DS_Store
 
 old.*
 # *.xlsx
