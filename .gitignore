@@ -2,9 +2,9 @@ importance_scores_v4b
 merged_file_unique.csv
 data_features.csv
 
-old.js
+old.*
+# *.xlsx
 
 # venv
 .venv
 py310_venv
-

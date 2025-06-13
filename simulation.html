@@ -3,21 +3,175 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Simulation through intervention</title>
+  <title>Disaster Bench</title>
+
+  <!-- CSS -->
   <link rel="stylesheet" href="style.css"/>
+
+  <!-- D3 & TopoJSON -->
+  <script src="https://d3js.org/d3.v7.min.js" defer></script>
+  <script src="https://d3js.org/topojson.v3.min.js" defer></script>
+
+  <!-- JS -->
+  <script src="main.js" defer></script>
+  <script src="create_sliders.js" defer></script>
+  <script src="simulation.html.js" defer></script>
 </head>
+
+
+
 <body>
   <header>
     <h1>Disaster Bench</h1>
     <nav class="controls">
       <a href="index.html" class="btn">Attribution Score</a>
-      <a href="simulation.html" class="btn active">Simulation through intervention</a>
-      <a href="attribution.html" class="btn">Attribution Score</a>
+      <a href="simulation.html" class="btn">Simulation through intervention</a>
+      <a href="attribution.html" class="btn active">Attribution Score</a>
     </nav>
   </header>
+  
+  <!-- <main> -->
   <main id="viz">
-    <!-- TODO: wire up your simulation widgets here -->
-    <p style="padding:20px; font-style:italic;">Page under construction…</p>
+    <!-- Left: US county choropleth;  stolen from index.html -->
+    <div class="left-panel">
+      <svg id="map" class="chart" role="img"></svg>
+    </div>
+
+    <!-- Right: DAG, feature mixer -->
+    <div class="right-panel">
+        <!-- Reference -->
+        <!-- <button class="grid-section feature-section" data-modal="feature-modal">
+          <h2>Feature</h2>
+        </button>
+        
+        <button class="grid-section source-section" data-modal="source-modal">
+          <h2>Source</h2>
+        </button>
+        
+        <button class="grid-section feature-gap-section" data-modal="gap-modal">
+          <h2>Feature Gap Level</h2>
+        </button> -->
+
+        <!-- TODO: merge control-box shi with grid-section stuf -->
+
+      <div class="grid-box">
+        <div class="grid-section">
+          <h3>Select DAG</h3>
+          <select id="dagSelect">
+            <option value="">Choose a DAG...</option>
+            <option value="dag1">DAG 1: Independent Effects</option>
+            <option value="dag2">DAG 2: Infrastructure Mediator (Wind/Fire)</option>
+            <option value="dag3">DAG 3: Flood Drives All Paths</option>
+          </select>
+          
+          <!-- <div class="toggle-section">
+            <button class="toggle-btn active" id="toggleAlgo">Algo</button>
+            <button class="toggle-btn" id="toggleRecourse">Recourse</button>
+          </div> -->
+        </div>
+        
+        <div class="grid-section">
+          <h3>Feature intervention</h3>
+          <!-- opens up pop-up with all features' sliding bar and categorized -->
+          <button class="grid-section" data-modal="feature-modal">
+            <h3>Open pop-up menu</h3>
+          </button>
+
+
+
+          <!-- <select id="dropSelect">
+            <option value="">Select feature to drop...</option>
+            <option value="informational">Informational</option>
+            <option value="humanitarian">Humanitarian</option>
+            <option value="severity">Severity</option>
+          </select> -->
+        </div>
+        
+        <div class="grid-section">
+          <h3>Value</h3>
+          <p id="value">Value</p>
+        </div>
+        
+        <div class="grid-section">
+          <h3>Result value</h3>
+          <p id="resValue">Resultant value</p>
+        </div>
+      </div>
+      
+      <div class="dag-container">
+        <div class="dag-nodes">
+          <div class="dag-node" data-node="dag1">
+            <img src="assets/dag1.png" alt="DAG 1">
+          </div>
+          <div class="dag-node" data-node="dag2">
+            <img src="assets/dag2.png" alt="DAG 2">
+          </div>
+          <div class="dag-node" data-node="dag3">
+            <img src="assets/dag3.png" alt="DAG 3">
+          </div>
+        </div>
+        <!-- maybye we can have a button to have a pop-up that shows the picture in high res -->
+      </div>
+      <!-- dag container end -->
+    </div>
+    <!-- right panel end -->
+
+
+    <!-- Modal dialogs start -->
+    <div id="feature-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Feature Intervention Settings</h2>
+          <span class="close-btn">&times;</span>
+        </div>
+        
+        <!-- Main menu (navigation) -->
+        <div id="feature_modal_menu" class="modal-body modal-grid-box modal-content-section active">
+          <button class="modal-grid-section" data-target="feature_modal_transitions_">
+            Transition_
+          </button>
+          <button class="modal-grid-section" data-target="feature_modal_news_">
+            News_
+          </button>
+          <button class="modal-grid-section" data-target="feature_modal_reddit_">
+            Reddit_
+          </button>
+        </div>
+        <!-- Main menu (navigation) ends -->
+
+        <!-- Content sections (hidden by default) -->
+        <div id="feature_modal_transitions_" class="modal-body modal-grid-box modal-content-section">
+          <button class="back-btn" data-target="feature_modal_menu">← Back to Menu</button>
+          <h2>Transitions_</h2>
+        <!-- The single slider below will be REPLACED by 80 sliders with create_sliders.js -->
+          <div class="slider-container">
+            <div class="slider-label">
+              <span> transition_0 </span>
+              <span class="slider-value" id="transition_0-value">100</span> <!-- initial / set value goes here -->
+            </div>
+            <input type="range" min="0" max="1000000000" value="100" class="slider" id="transition_0-slider" data-label="transition_0">
+          </div>
+        <!-- The single slider below will be REPLACED by 80 sliders with create_sliders.js -->
+        </div>
+        
+        <div id="feature_modal_news_" class="modal-body modal-grid-box modal-content-section">
+          <button class="back-btn" data-target="feature_modal_menu">← Back to Menu</button>
+          <h2>News_</h2>
+          <!-- Your news content here -->
+        </div>
+        
+        <div id="feature_modal_reddit_" class="modal-body modal-grid-box modal-content-section">
+          <button class="back-btn" data-target="feature_modal_menu">← Back to Menu</button>
+          <h2>Reddit_</h2>
+          <!-- Your reddit content here -->
+        </div>
+        <!-- Content sections (hidden by default) end -->
+      </div>
+    </div>
+    <!-- modal dialogs end -->
   </main>
+  
+  <div id="tip" class="tooltip"></div>
+
 </body>
 </html>
