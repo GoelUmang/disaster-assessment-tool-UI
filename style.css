@@ -17,6 +17,24 @@
   --scale-med:  #feb24c;
   --scale-high: #f03b20;
 }
+/* unified typeface */
+:root{
+  --font-ui: "Inter", system-ui, sans-serif;   /* fallback ≈ current */
+}
+
+/* let it cascade to everything */
+html, body{
+  font-family: var(--font-ui);
+  font-weight:400;            /* Inter renders optical sizes well */
+}
+
+/* optional: headings / buttons with a slightly bolder weight */
+h1, h2, h3, h4, h5, h6,
+button, .dropbtn, .bar-label{
+  font-family: var(--font-ui);
+  font-weight:600;
+}
+
 
 *{box-sizing:border-box}
 html,body{
@@ -50,7 +68,7 @@ h1{
   align-items:center;
   gap:12px;
   flex-wrap:wrap;
-  font-size:.9rem;
+  font-size:1rem;
 }
 .controls label{
   display:flex;
@@ -116,12 +134,12 @@ main {
 
 .control-box h3 {
   margin: 0 0 0.3rem 0;
-  font-size: 0.85rem;
+  font-size: 1rem;
 }
 
 .control-box p {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 1rem;
 }
 
 /* Select DAG section */
@@ -150,11 +168,11 @@ select {
 .file-upload input[type="file"] {
   width: 100%;
   padding: 0.3rem;
-  font-size: 0.75rem;
+  font-size: 1rem;
 }
 
 .file-upload-label {
-  font-size: 0.75rem;
+  font-size: 1rem;
 }
 
 /* DAG container - bottom right (much larger) */
@@ -334,6 +352,13 @@ svg [tabindex="0"]:focus{
   flex-direction: column;
   flex: 1;              /* take all available vertical space */
 }
+/* left-hand text */
+.bar-label{
+  font-size:1.175rem;
+  font-weight:500;
+  align-self:center;
+  margin-right:1rem;   /* matches the existing gap */
+}
 
 /* 2) Controls row styling */
 .bar-controls {
@@ -341,6 +366,26 @@ svg [tabindex="0"]:focus{
   justify-content: space-between;
   margin-bottom: 1rem;
 }
+
+
+.bar-controls{
+  display:flex;
+  align-items:center; /* label and buttons share baseline */
+  gap:1rem;
+  margin-bottom:1rem;
+}
+
+.bar-label{
+  font-weight:600;
+  font-size:0.9rem;
+}
+
+/* ensure the plain Sources button has same visual width & hover */
+#source-dropdown .dropbtn{
+  min-width:110px;   /* same as auto width of other buttons */
+}
+
+
 
 /* 3) Dropdown button styling */
 .dropdown {
@@ -352,7 +397,44 @@ svg [tabindex="0"]:focus{
   border: 1px solid #ccc;
   padding: 0.4rem 0.8rem;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 1rem;
+}
+
+
+/* ─── Pretty header nav  ───────────────────────────────────────── */
+
+/* base look for every route link */
+header .controls a.btn{
+  display:inline-block;
+  padding:6px 14px;
+  font-size:1.2rem;
+  font-weight:600;
+  color:var(--txt);
+  text-decoration:none;
+  border:1px solid transparent;
+  border-radius:var(--radius);
+  transition:background .15s, color .15s;
+}
+
+/* hover / focus */
+header .controls a.btn:hover,
+header .controls a.btn:focus{
+  background:#eef3fa;
+  border-color:var(--border);
+  outline:none;
+}
+
+/* current page */
+header .controls a.btn.active{
+  background:var(--accent);
+  border-color:var(--accent);
+  color:#fff;
+  cursor:default;
+}
+
+/* give the group a little breathing-room from the left edge */
+header .controls{
+  margin-left:.5rem;
 }
 
 /* ─── Align checkboxes & labels in dropdowns ───────────────────────── */
@@ -362,6 +444,31 @@ svg [tabindex="0"]:focus{
   padding: 0.3rem 0.6rem;
   cursor: pointer;
 }
+
+/* One item per row, nice spacing */
+#group-dropdown .dropdown-content a{
+  display:block;              /* anchors behave like list items   */
+  padding:4px 8px;            /* breathing room                   */
+  white-space:nowrap;         /* keep long names on a single line */
+  text-decoration:none;       /* optional: no underline           */
+  color:var(--txt);           /* use your base text colour        */
+}
+
+#group-dropdown .dropdown-content a:hover{
+  background:#f0f4ff;
+}
+
+/* you already have .selected defined;
+   keep it, or add it here if it doesn't exist */
+#group-dropdown .dropdown-content a.selected{
+  background:var(--accent);
+  color:#fff;
+}
+/* ─── Hide the checkbox squares in the Sources dropdown ────────── */
+#source-dropdown .dropdown-content input[type="checkbox"]{
+  display:none;          /* checkbox is still there, just invisible */
+}
+
 .bar-controls {
   justify-content: center;  /* center all items */
   gap: 1rem;                /* space them out */
@@ -390,6 +497,10 @@ svg [tabindex="0"]:focus{
   overflow-y: auto;
   z-index: 1000;
 }
+
+
+
+
 .dropdown:hover .dropdown-content {
   display: block;
 }
@@ -429,10 +540,14 @@ svg [tabindex="0"]:focus{
   width:95%;
   height:100%;
 }
-/* give the chart svg a little breathing-room */
-
-.model-selector {
-  font-family: system-ui, sans-serif;
-  background: transparent;
-  font-size: 0.75rem;
+/* ─── keep the “Edit Feature” box the same width as Instance Data ─── */
+#user-input{
+  max-width:220px;      /* identical to the narrow column */
+  justify-self:start;   /* stop stretching across the wide track */
 }
+
+/* optional: make the dropdown fill that 220-px box neatly */
+#user-input select{
+  width:100%;
+}
+

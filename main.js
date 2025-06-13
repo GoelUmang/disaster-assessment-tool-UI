@@ -7,19 +7,23 @@ function has(sel) {
 
 let allData, countiesTopo;
 let recourseData = [];          
+let sourceNecessity = []; 
+let selectedFips = null;
 const tooltip = d3.select("#tip");
 // ────────────────────────────────────────────────────────────────────────────────
 // 1) LOAD data_features.csv + COUNTY TOPOJSON (no year filters anymore)
 Promise.all([
   d3.csv("data_features.csv", d3.autoType),
   d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json"),
-  d3.csv("dummy_algo.csv",     d3.autoType)
+  d3.csv("dummy_algo.csv",     d3.autoType),
+  d3.csv("models/disaster-assessment-tool/importance_scores_v4b/source_necessity_scores.csv", d3.autoType)
 
-]).then(([rows, us, tempRows]) => {
-  allData      = rows;  // now allData has every row from data_features.csv
-  countiesTopo = topojson.feature(us, us.objects.counties).features;
-  recourseData = tempRows;
-  drawAll();           // jump straight to drawing—no initFilters()
+]).then(([rows, us, tempRows, sourceRows]) => {
+  allData           = rows;
+  countiesTopo      = topojson.feature(us, us.objects.counties).features;
+  recourseData      = tempRows;
+  sourceNecessity   = sourceRows;          // <–– NEW
+  drawAll();
 })
 .catch(err => console.error("Data load error:", err));
 
@@ -31,11 +35,14 @@ function drawMap(data) {
         H   = svg.node().clientHeight;
   svg.selectAll("*").remove();
 
-  // 1) Projection + path generator
-  const proj    = d3.geoAlbersUsa()
-                    .translate([W/2, H/2])
-                    .scale(1100);
-  const pathGen = d3.geoPath().projection(proj);
+  // 1) Responsive projection + path generator
+const proj = d3.geoAlbersUsa()
+.fitSize([W, H], {type: "FeatureCollection", features: countiesTopo});
+
+svg.attr("viewBox", `0 0 ${W} ${H}`);   // keep map crisp when SVG resizes
+
+const pathGen = d3.geoPath().projection(proj);
+
 
   // 2) Count how many rows per FIPS (number of events or records per county)
   const counts = d3.rollups(
@@ -62,6 +69,7 @@ function drawMap(data) {
       .attr("fill", d => {
         // d.id is a string or number. We’ll treat it as a zero‐padded string:
         const fips = String(d.id).padStart(5, '0');
+
         return countMap.has(fips)
           ? presentColor
           : absentColor;
@@ -70,7 +78,7 @@ function drawMap(data) {
       .attr("stroke-width", 1)
       .on("click", (e, d) => {
         const fips = String(d.id).padStart(5, "0");
-      
+        selectedFips = fips; 
         if (has("#bar"))        drawFeatureBar(fips);      // Attribution page only
         if (has("#instance-data")) updateDataDisplay(fips); // Recourse page only
         if (has("#user-input"))    updateUserInput(fips);   // Recourse page only
@@ -104,8 +112,8 @@ function drawMap(data) {
     .attr("transform", `translate(20, ${H - 60})`);
 
   const legendData = [
-    { color: presentColor, label: "County present in data" },
-    { color: absentColor,  label: "County not in data" }
+    { color: presentColor, label: "Counties of Importance" },
+    { color: absentColor,  label: "Other Counties" }
   ];
 
   legend.selectAll("rect")
@@ -286,43 +294,66 @@ function clearWorldMap() {
   d3.select("#worldmap").selectAll("*").remove();
 }
 
-// ─── Populate Feature & Group dropdowns ────────────────────────────────────
+// ── Populate Feature, Source, Group dropdowns ──────────────────────────
 d3.csv('models/disaster-assessment-tool/assets/groupings/feature_groupings.csv')
   .then(rows => {
     if (!rows.length) return;
 
-    // auto-detect the first two columns
-    const cols = Object.keys(rows[0]);
-    const featKey  = cols[0];  // column A
-    const groupKey = cols[1];  // column B
+    // auto-detect columns  A = Feature, B = Group, C = Source
+    const cols      = Object.keys(rows[0]);
+    const featKey   = cols[0];         // e.g. "feature"
+    const groupKey  = cols[1];         // e.g. "group"
+    const sourceKey = cols[2];         // e.g. "source"
 
-    // 1) Features: one checkbox per row, in #feature-dropdown
+    /* ---------- 1.  FEATURES  – checkbox per row ------------------- */
     const featCont = d3.select('#feature-dropdown .dropdown-content');
     rows.forEach(r => {
       const val = r[featKey];
       const id  = `feat-${val.replace(/\W+/g,'_')}`;
       const lbl = featCont.append('label').attr('for', id);
       lbl.append('input')
-         .attr('type', 'checkbox')
-         .attr('id', id)
-         .attr('value', val);
+         .attr('type','checkbox')
+         .attr('id',   id)
+         .attr('value',val);
       lbl.append('span').text(` ${val}`);
     });
 
-    // 2) Feature Groups: unique values, in #group-dropdown
+    /* ---------- 2.  SOURCES  – checkbox per unique value ----------- */
+    const uniqueSources = Array.from(new Set(rows.map(r => r[sourceKey])));
+    const srcCont = d3.select('#source-dropdown .dropdown-content');
+    uniqueSources.forEach(s => {
+      const id  = `src-${s.replace(/\W+/g,'_')}`;
+      const lbl = srcCont.append('label').attr('for', id);
+      lbl.append('input')
+         .attr('type','checkbox')
+         .attr('id',   id)
+         .attr('value',s);
+      lbl.append('span').text(` ${s}`);
+    });
+
+    /* ---------- 3.  FEATURE GROUPS  –  single-select list ---------- */
     const uniqueGroups = Array.from(new Set(rows.map(r => r[groupKey])));
     const grpCont = d3.select('#group-dropdown .dropdown-content');
-    uniqueGroups.forEach(g => {
-      const id = `group-${g.replace(/\W+/g,'_')}`;
-      const lbl = grpCont.append('label').attr('for', id);
-      lbl.append('input')
-         .attr('type', 'checkbox')
-         .attr('id', id)
-         .attr('value', g);
-      lbl.append('span').text(` ${g}`);
-    });
+
+    /** helper: mark selected item */
+    function selectGroup(g){
+      grpCont.selectAll('a').classed('selected', d => d === g);
+      // TODO: call whatever update/filter routine you already have
+      console.log('Selected group:', g);
+    }
+
+    grpCont.selectAll('a')
+      .data(uniqueGroups)
+      .join('a')
+        .attr('href','#')
+        .text(d => d)
+        .on('click', (e,d) => {          // single-select click
+          e.preventDefault();
+          selectGroup(d);
+        });
   })
   .catch(err => console.error('Failed to load grouping CSV:', err));
+
 
 // 🔁  replace ALL copies of updateDataDisplay() with exactly ONE copy
 function updateDataDisplay(fips) {
@@ -430,6 +461,121 @@ function drawSeverityChart(modelS, userS){
        .attr("fill", "#3182bd");
 }
 
+/* ───────── Source-wise bar chart ───────────────────────── */
+/* ─── Source-wise 3-bar chart ───────────────────────────────────────── */
+function drawSourceBar(fips){
+  if(!has("#bar")) return;
+
+  const row = sourceNecessity.find(r => String(r.FIPS).padStart(5,'0') === fips);
+  if(!row){
+    d3.select("#bar").html("<p style='padding:1rem'>No source-level data for this county</p>");
+    return;
+  }
+
+  /* 1. DATA --------------------------------------------------------- */
+  const data = [
+    {src:"News",           val:+row.necessity_News},
+    {src:"Reddit",         val:+row.necessity_Reddit},
+    {src:"Remote Sensing", val:+row.necessity_Transition}
+  ];
+  const color = d3.scaleOrdinal()
+        .domain(data.map(d=>d.src))
+        .range(["#d4a73d","#d1793d","#c94d5f"]);   // gold, clay, rose
+
+  /* 2. SIZE — use container’s actual size -------------------------- */
+  const box = d3.select("#bar").html("");          // clear previous
+  const W = box.node().clientWidth,
+        H = box.node().clientHeight;
+  const m = {t:40,r:20,b:50,l:60};
+
+  const svg = box.append("svg")
+                 .attr("viewBox",`0 0 ${W} ${H}`)
+                 .attr("width","100%").attr("height","100%");
+
+  /* 3. SCALES + AXES ----------------------------------------------- */
+  const x = d3.scaleBand()
+              .domain(data.map(d=>d.src))
+              .range([m.l, W-m.r]).padding(0.3);
+  const y = d3.scaleLinear()
+              .domain([0, d3.max(data,d=>d.val)||1]).nice()
+              .range([H-m.b, m.t]);
+
+  svg.append("g")
+     .attr("transform",`translate(0,${H-m.b})`)
+     .call(d3.axisBottom(x).tickSizeOuter(0));
+  svg.append("g")
+     .attr("transform",`translate(${m.l},0)`)
+     .call(d3.axisLeft(y));
+  svg.append("g")                                 // X-axis
+     .attr("transform",`translate(0,${H-m.b})`)
+     .call(d3.axisBottom(x).tickSizeOuter(0));
+  
+  svg.append("g")                                 // Y-axis
+     .attr("transform",`translate(${m.l},0)`)
+     .call(d3.axisLeft(y));
+  
+  /* NEW → Y-axis label */
+  svg.append("text")
+     .attr("transform","rotate(-90)")
+     .attr("x", -(H/2))
+     .attr("y", m.l - 45)
+     .attr("text-anchor","middle")
+     .attr("font-size",".85rem")
+     .attr("font-weight",600)
+     .text("Necessity Score");
+  
+
+  /* 4. BARS + tooltip ---------------------------------------------- */
+  svg.selectAll("rect")
+     .data(data)
+     .join("rect")
+       .attr("x", d=>x(d.src))
+       .attr("y", d=>y(d.val))
+       .attr("width", x.bandwidth())
+       .attr("height", d=>y(0)-y(d.val))
+       .attr("fill", d=>color(d.src))
+       .on("mouseover",(e,d)=>{
+          tooltip.style("opacity",0.9)
+                 .html(`${d.src}: ${d3.format(".3f")(d.val)}`)
+                 .style("left",(e.pageX+8)+"px")
+                 .style("top",(e.pageY-28)+"px");
+       })
+       .on("mouseout",()=>tooltip.style("opacity",0));
+
+  /* 5. TITLE -------------------------------------------------------- */
+  svg.append("text")
+     .attr("x",W/2).attr("y",m.t-15)
+     .attr("text-anchor","middle")
+     .attr("font-size","1.05rem")
+     .attr("font-weight",600)
+     .text(`Source-wise Necessity Importance for FIPS ${fips}, ${row.County_Name}, ${row.State}`)
+
+
+  /* 6. LEGEND (colored dots) --------------------------------------- */
+  const leg = svg.append("g")
+                 .attr("transform",`translate(${W-m.r-120},${m.t})`);
+  leg.selectAll("rect")
+     .data(data)
+     .join("rect")
+       .attr("x",0).attr("y",(d,i)=>i*18)
+       .attr("width",14).attr("height",14)
+       .attr("fill",d=>color(d.src));
+  leg.selectAll("text")
+     .data(data)
+     .join("text")
+       .attr("x",20).attr("y",(d,i)=>i*18+11)
+       .attr("font-size",".8rem")
+       .text(d=>d.src);
+}
+
+
+d3.select("#source-btn").on("click", () => {
+  if (selectedFips) {
+    drawSourceBar(selectedFips);
+  } else {
+    alert("Click a county on the map first.");
+  }
+});
 
 // ------------- clear on year/change --------------
 function drawAll() {
@@ -441,4 +587,3 @@ function drawAll() {
 drawAll();
 // ensure all three charts re‑render on window resize
 window.addEventListener("resize", drawAll);
-

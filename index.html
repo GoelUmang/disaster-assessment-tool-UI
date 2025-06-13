@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Disaster Bench</title>
@@ -37,33 +39,28 @@
 
     </div> -->
     <div class="side-charts">
-      <div id="bar-container">
-        <!-- 1) Controls row -->
-        <div class="bar-controls">
-          <!-- Feature checkboxes dropdown -->
-          <div class="dropdown" id="feature-dropdown">
-            <button class="dropbtn">Features ▾</button>
-            <div class="dropdown-content">
-              <!-- checkboxes populated dynamically -->
-            </div>
-          </div>
-    
-          <!-- Sources checkboxes dropdown -->
-          <div class="dropdown" id="source-dropdown">
-            <button class="dropbtn">Sources ▾</button>
-            <div class="dropdown-content">
-              <!-- checkboxes populated dynamically -->
-            </div>
-          </div>
-    
-          <!-- Feature-group selector dropdown -->
-          <div class="dropdown" id="group-dropdown">
-            <button class="dropbtn">Feature Groups ▾</button>
-            <div class="dropdown-content">
-              <!-- single-select or checkboxes for groups -->
-            </div>
-          </div>
+      <div class="bar-controls">
+        <span class="bar-label">Importance:</span>
+      
+        <!-- Features dropdown (unchanged) -->
+        <div class="dropdown" id="feature-dropdown">
+          <button class="dropbtn">Features ▾</button>
+          <div class="dropdown-content"></div>
         </div>
+      
+        <!-- Feature Groups dropdown (unchanged) -->
+        <div class="dropdown" id="group-dropdown">
+          <button class="dropbtn">Feature Groups ▾</button>
+          <div class="dropdown-content"></div>
+        </div>
+      
+        <!-- Sources = regular button wrapped in .dropdown for spacing -->
+        <div class="dropdown" id="source-dropdown">
+          <button id="source-btn" class="dropbtn">Sources</button>
+        </div>
+      </div>
+      
+        
     
         <!-- 2) Your existing bar chart -->
         <svg id="bar" class="chart" role="img"></svg>
