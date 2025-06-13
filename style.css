@@ -41,7 +41,7 @@ button, .dropbtn, .bar-label{
 *{box-sizing:border-box}
 html,body{
   margin:0;
-  height:150%; /* increased a little */
+  height:120%; /* increased a little */
   font-family:system-ui,sans-serif;
   background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
   color:var(--txt);
