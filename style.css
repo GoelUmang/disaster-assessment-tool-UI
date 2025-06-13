@@ -110,6 +110,25 @@ button:hover{
   background:#e9eef4;
 }
 
+.nav-btn {
+  border:1px solid var(--border);
+  background: var(--accent);
+  color: white;
+  border-radius:var(--radius);
+  padding:4px 10px;
+  font-size:.8rem;
+  cursor:pointer;
+  transition: background-color 0.2s;
+}
+.nav-btn:hover {
+  background: #004a7a;
+}
+.nav-btn.active {
+  background: #004a7a;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
 .btn {
   padding: 10px 20px;
   font-size: 14px;
@@ -122,7 +141,7 @@ button:hover{
 }
 
 .btn-primary:hover {
-  background: #2c5282;
+  background: #00579c;
 }
 
 .btn-secondary {
