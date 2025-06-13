@@ -22,17 +22,18 @@
 
 
 <body>
+  <!-- <header> start -->
   <header>
     <h1>Disaster Bench</h1>
     <nav class="controls">
-      <a href="index.html" class="nav-btn active">Attribution Score</a>
+      <a href="index.html" class="nav-btn">Attribution Score</a>
       <a href="simulation.html" class="nav-btn">Simulation through intervention</a>
       <a href="attribution.html" class="nav-btn">Attribution Score</a>
     </nav>
     
   </header>
   
-  <!-- <main> -->
+  <!-- <main> start -->
   <main id="viz">
     <!-- Left: US county choropleth;  stolen from index.html -->
     <div class="left-panel">
@@ -75,7 +76,7 @@
         <div class="grid-section">
           <h3>Feature intervention</h3>
           <!-- opens up pop-up with all features' sliding bar and categorized -->
-          <button class="grid-section" data-modal="feature-modal">
+          <button class="grid-section-button" data-modal="feature-modal">
             <h3>Open pop-up menu</h3>
           </button>
 
@@ -88,6 +89,19 @@
             <option value="severity">Severity</option>
           </select> -->
         </div>
+
+        <div class="grid-section">
+          <button class="grid-section-button" data-modal="snapshot-modal">
+            <h3>Current Intervention (?)</h3>
+          </button>
+          
+        </div>
+        <div class="grid-section">
+          <button class="grid-section-button">
+            <h3>Compute Result</h3>
+          </button>
+        </div>
+        <!-- need a space where it shows a snapshot of the current values as well -->
         
         <div class="grid-section">
           <h3>Value</h3>
@@ -160,6 +174,7 @@
           <button class="back-btn" data-target="feature_modal_menu">← Back to Menu</button>
           <h2>News_</h2>
           <!-- Your news content here -->
+          <!-- I have no idea how this can get populated too -->
         </div>
         
         <div id="feature_modal_reddit_" class="modal-body modal-grid-box modal-content-section">
@@ -168,6 +183,19 @@
           <!-- Your reddit content here -->
         </div>
         <!-- Content sections (hidden by default) end -->
+      </div>
+    </div>
+
+    <div id="snapshot-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Current Intervention Features Snapshot</h2>
+          <span class="close-btn">&times;</span>
+        </div>
+
+        <div class="modal-body">
+
+        </div>
       </div>
     </div>
     <!-- modal dialogs end -->

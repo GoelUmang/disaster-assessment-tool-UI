@@ -1,4 +1,7 @@
-// create_sliders.js - Generate sliders for the modal
+// File name: / create_sliders.js
+// File description: Generate sliders for the modal
+
+// FOo
 
 // for feature_modal_transitions_
 function createSlider1(index) {
