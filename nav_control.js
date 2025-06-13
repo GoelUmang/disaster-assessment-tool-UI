@@ -8,5 +8,7 @@ links.forEach(link => {
 if (link.getAttribute('href') === currentPath) {
     link.classList.add('active');
     // link.setAttribute.diss
+} else {
+    link.classList.remove('active');
 }
 });

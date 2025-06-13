@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Disaster Bench</title>
@@ -25,7 +27,7 @@
     <nav class="controls">
       <a href="index.html" class="nav-btn active">Attribution Score</a>
       <a href="simulation.html" class="nav-btn">Simulation through intervention</a>
-      <a href="attribution.html" class="nav-btn">Attribution Score</a>
+      <a href="algorithmic_recouse.html" class="nav-btn">Algorithmic recourse</a>
     </nav>
     
   </header>
@@ -35,10 +37,40 @@
     <svg id="map" class="chart" role="img"></svg>
 
     <!-- Right: features bar + Dynamic World panel -->
-    <div class="side-charts">
+    <!-- <div class="side-charts">
       <svg id="bar" class="chart" role="img"></svg>
 
+    </div> -->
+    <div class="side-charts">
+      <div class="bar-controls">
+        <span class="bar-label">Importance:</span>
+      
+        <!-- Features dropdown (unchanged) -->
+        <div class="dropdown" id="feature-dropdown">
+          <button class="dropbtn">Features ▾</button>
+          <div class="dropdown-content"></div>
+        </div>
+      
+        <!-- Feature Groups dropdown (unchanged) -->
+        <div class="dropdown" id="group-dropdown">
+          <button class="dropbtn">Feature Groups ▾</button>
+          <div class="dropdown-content"></div>
+        </div>
+      
+        <!-- Sources = regular button wrapped in .dropdown for spacing -->
+        <div class="dropdown" id="source-dropdown">
+          <button id="source-btn" class="dropbtn">Sources</button>
+        </div>
+      </div>
+      
+        
+    
+        <!-- 2) Your existing bar chart -->
+        <svg id="bar" class="chart" role="img"></svg>
+      </div>
     </div>
+
+
   </main>
 
   <div id="tip" class="tooltip"></div>
