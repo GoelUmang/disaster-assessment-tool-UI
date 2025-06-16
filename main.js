@@ -84,8 +84,8 @@ const pathGen = d3.geoPath().projection(proj);
         if (has("#user-input"))    updateUserInput(fips);   // Recourse page only
 
         const row = recourseData.find(r=>String(r.FIPS).padStart(5,"0")===fips);
-  const modelSev = row ? row.severity : "low";   // fallback demo value
-  drawSeverityChart(modelSev, modelSev);
+        const modelSev = row ? row.severity : "medium";
+        drawLollipopChart(fips, modelSev);
       })
     
       .on("mouseover", (e, d) => {
@@ -171,7 +171,7 @@ function drawFeatureBar(fips) {
   
   
   // 1) Load the entire CSV of instance-level necessity scores
-  d3.csv("importance_scores_v4b/instance_necessity_scores.csv", d3.autoType)
+  d3.csv("models/disaster-assessment-tool/importance_scores_v4b/instance_necessity_scores.csv", d3.autoType)
     .then(rawData => {
       // 2) Find the single row whose "c" column matches the clicked FIPS
       //    Coerce both to strings to avoid type mismatches.
@@ -373,92 +373,178 @@ function updateDataDisplay(fips) {
 
   
   
-function updateUserInput(fips) {
-  if (!has("#user-input")) return; 
-  const row = recourseData.find(r => String(r.FIPS).padStart(5,"0") === fips);
-  const container = d3.select("#user-input");
+function updateUserInput(fips){
+  if (!has("#user-input")) return;
 
-  container.selectAll("label, select, p").remove();
+  const row       = recourseData.find(r => +r.FIPS === +fips);
+  const container = d3.select("#user-input").html("");
 
-  if (!row) {
+  if (!row){
     container.append("p").text(`No editable data for FIPS ${fips}`);
     return;
   }
-
-  const levels = ["low","medium","high"];
 
   container.append("label")
            .attr("for","severity-select")
            .text("Set severity: ");
 
-  container.append("select")
-           .attr("id","severity-select")
-           .selectAll("option")
-           .data(levels)
-           .join("option")
-             .attr("value", d => d)
-             .property("selected", d => d === row.severity) // pre-select CSV value
-             .text(d => d.charAt(0).toUpperCase() + d.slice(1))
-             .on("change", function(){
-              const userSev = this.value;
-              console.log(`User set ${fips} → ${userSev}`);
-              drawSeverityChart(row.severity, userSev);    // live update
-            });
+  /* build the <select>, then attach ONE change-handler to it */
+  const sel = container.append("select")
+                       .attr("id","severity-select")
+                       .on("change", function(){                 // ← MOVE handler here
+                         const userSev = this.value;
+                         drawLollipopChart(fips, userSev);      // live refresh
+                       });
+
+  sel.selectAll("option")                                       // only options below
+     .data(["low","medium","high"])
+     .join("option")
+       .attr("value", d => d)
+       .property("selected", d => d === row.severity)
+       .text(d => d.charAt(0).toUpperCase() + d.slice(1));
 }
 
 
-// ─── Severity helpers ────────────────────────────────────────────
-const sevScale = { low: 1, medium: 2, high: 3 };
-const sevLabels = ["Low","Medium","High"];
 
-/**
- * Draw/refresh the 2-bar comparison.
- * @param {string} modelS  severity from CSV  ("low"|"medium"|"high")
- * @param {string} userS   severity from dropdown (same set)
- */
-function drawSeverityChart(modelS, userS){
-  if(!has("#chart")) return;                         // wrong page
+function severityTarget(val, lvl) {
+  if (lvl === "low")    return +d3.format(".3f")(val * 0.40);          // –-60 %
+  if (lvl === "high")   return +d3.format(".3f")(Math.min(val * 1.40, 1));
+  return +d3.format(".3f")(val);                                       // medium
+}
 
-  const W = 200, H = 160, margin = {t:20,r:20,b:30,l:40};
+/* ═══════════  L O L L I P O P   C H A R T  ═══════════ */
+function drawLollipopChart(fips, userLvl = "medium"){
+  if (!has("#chart")) return;
 
-  // convert to numeric
-  const data = [
-    {src:"Model", val: sevScale[modelS]},
-    {src:"User",  val: sevScale[userS]}
-  ];
+  /* 1) LOAD INSTANCE-LEVEL NECESSITY SCORES */
+  d3.csv("models/disaster-assessment-tool/importance_scores_v4b/instance_necessity_scores.csv", d3.autoType)
+    .then(rows => {
+      const row = rows.find(r => +r.FIPS === +fips);
+      if (!row){
+        d3.select("#chart").html(`<p style="padding:1rem">No necessity data for FIPS ${fips}</p>`);
+        return;
+      }
 
-  // root
-  const box   = d3.select("#chart");
-  box.selectAll("*").remove();                       // clear previous
-  const svg   = box.append("svg")
-                   .attr("width",  W)
-                   .attr("height", H);
+      /* 2) TOP-5 FEATURES */
+      const top5 = extractTopFeatures(row, 5).map(d => ({
+        feature : d.feature,
+        model   : +d.value,
+        target  : severityTarget(+d.value, userLvl)
+      }));
 
-  // scales
-  const x = d3.scaleBand()
-              .domain(data.map(d=>d.src))
-              .range([margin.l, W-margin.r])
-              .padding(0.35);
-  const y = d3.scaleLinear()
-              .domain([0,3]).nice()
-              .range([H-margin.b, margin.t]);
+      /* 3) SVG SET-UP */
+      const box = d3.select("#chart").html("");     // clear
+      const W   = box.node().clientWidth  || 420;
+      const H   = Math.max(box.node().clientHeight, 240);
+      const m   = { t:40, r:Math.max(30, W*0.06), b:40, l:Math.max(110, W*0.25) };
 
-  // axes
-  svg.append("g").attr("transform",`translate(0,${H-margin.b})`)
-     .call(d3.axisBottom(x));
-  svg.append("g").attr("transform",`translate(${margin.l},0)`)
-     .call(d3.axisLeft(y).ticks(3)
-                        .tickFormat(d=>sevLabels[d-1]));
+      const svg = box.append("svg")
+                     .attr("viewBox", `0 0 ${W} ${H}`)
+                     .attr("width",  "100%")
+                     .attr("height", "100%");
 
-  // bars
-  svg.selectAll("rect")
-     .data(data)
-     .join("rect")
-       .attr("x", d=>x(d.src))
-       .attr("y", d=>y(d.val))
-       .attr("width", x.bandwidth())
-       .attr("height", d=>y(0)-y(d.val))
-       .attr("fill", "#3182bd");
+      /* 4) SCALES & AXES */
+      const x = d3.scaleLinear()
+                  .domain([0, d3.max(top5, d => Math.max(d.model, d.target)) || 1])
+                  .range([m.l, W - m.r]);
+
+      const y = d3.scaleBand()
+                  .domain(top5.map(d => d.feature))
+                  .range([m.t, H - m.b])
+                  .padding(0.5);
+
+      svg.append("g")
+         .attr("transform", `translate(0,${H - m.b})`)
+         .call(d3.axisBottom(x).ticks(4))
+         .selectAll("text").style("font-size", "0.9rem");
+
+      svg.append("g")
+         .attr("transform", `translate(${m.l},0)`)
+         .call(d3.axisLeft(y))
+         .selectAll("text").style("font-size", "0.9rem");
+
+      /* 5) ARROW MARKER */
+      svg.append("defs").append("marker")
+         .attr("id", "arrowHead")
+         .attr("viewBox", "0 0 10 10")
+         .attr("refX", 10).attr("refY", 5)
+         .attr("markerWidth", 7).attr("markerHeight", 7)
+         .attr("orient", "auto-start-reverse")
+       .append("path")
+         .attr("d", "M0,0L10,5L0,10Z")
+         .attr("fill", "#000");
+
+      /* 6) CONNECTORS */
+      svg.append("g").selectAll("line")
+         .data(top5)
+         .join("line")
+           .attr("x1", d => x(d.model))
+           .attr("x2", d => x(d.target))
+           .attr("y1", d => y(d.feature) + y.bandwidth() / 2)
+           .attr("y2", d => y(d.feature) + y.bandwidth() / 2)
+           .attr("stroke", "#888")
+           .attr("stroke-width", 1.5)
+           .attr("marker-end", "url(#arrowHead)")
+           .attr("pointer-events", "none");
+
+      /* 7) DOTS + TOOLTIP */
+      const fmt = d3.format(".3f");
+      const tip = (lbl, val) => `<strong>${lbl}</strong><br>${fmt(val)}`;
+
+      svg.append("g").selectAll(".model")
+         .data(top5)
+         .join("circle")
+           .attr("class", "model")
+           .attr("cx", d => x(d.model))
+           .attr("cy", d => y(d.feature) + y.bandwidth() / 2)
+           .attr("r", 6)
+           .attr("fill", "#e41a1c")
+           .on("mouseover", (e, d) => tooltip.style("opacity", 0.9)
+                                             .html(tip(`${d.feature} (current)`, d.model))
+                                             .style("left", `${e.pageX + 8}px`)
+                                             .style("top",  `${e.pageY - 28}px`))
+           .on("mouseout", () => tooltip.style("opacity", 0));
+
+      svg.append("g").selectAll(".target")
+         .data(top5.filter(d => d.target !== d.model))
+         .join("circle")
+           .attr("class", "target")
+           .attr("cx", d => x(d.target))
+           .attr("cy", d => y(d.feature) + y.bandwidth() / 2)
+           .attr("r", 6)
+           .attr("fill", "#000")
+           .on("mouseover", (e, d) => tooltip.style("opacity", 0.9)
+                                             .html(tip(`${d.feature} (target)`, d.target))
+                                             .style("left", `${e.pageX + 8}px`)
+                                             .style("top",  `${e.pageY - 28}px`))
+           .on("mouseout", () => tooltip.style("opacity", 0));
+
+      /* 8) TITLE */
+      svg.append("text")
+         .attr("x", W / 2).attr("y", m.t - 18)
+         .attr("text-anchor", "middle")
+         .attr("font-size", "1.05rem")
+         .attr("font-weight", 600)
+         .text(`Algorithmic Recourse for Decision Support for FIPS ${fips}`);
+
+      /* 9) LEGEND */
+      const legendData = [
+        { lbl: "Current value", color: "#e41a1c" },
+        { lbl: "User target",   color: "#000"    }
+      ];
+      const legend = svg.append("g")
+                        .attr("transform", `translate(${W - m.r - 150},${m.t})`)
+                        .attr("font-size", ".85rem");
+      const row1 = legend.selectAll("g")
+                        .data(legendData).join("g")
+                        .attr("transform", (d, i) => `translate(0,${i * 16})`);
+      row1.append("rect").attr("width", 12).attr("height", 12).attr("fill", d => d.color);
+      row1.append("text").attr("x", 18).attr("y", 10).text(d => d.lbl);
+    })
+    .catch(err => {
+      console.error("Lollipop error:", err);
+      d3.select("#chart").html(`<p style="padding:1rem">Error loading necessity CSV</p>`);
+    });
 }
 
 /* ───────── Source-wise bar chart ───────────────────────── */
