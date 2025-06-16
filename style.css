@@ -271,11 +271,11 @@ select {
 .file-upload input[type="file"] {
   width: 100%;
   padding: 0.3rem;
-  font-size: 1rem;
+  font-size: 0.75rem;
 }
 
 .file-upload-label {
-  font-size: 1rem;
+  font-size: 0.75rem;
 }
 
 .model-selector {
