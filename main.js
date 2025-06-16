@@ -13,7 +13,7 @@ const tooltip = d3.select("#tip");
 // ────────────────────────────────────────────────────────────────────────────────
 // 1) LOAD data_features.csv + COUNTY TOPOJSON (no year filters anymore)
 Promise.all([
-  d3.csv("data_features.csv", d3.autoType),
+  d3.csv("models/disaster-assessment-tool/data/data_features.csv", d3.autoType),
   d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json"),
   d3.csv("dummy_algo.csv",     d3.autoType),
   d3.csv("models/disaster-assessment-tool/importance_scores_v4b/source_necessity_scores.csv", d3.autoType)
@@ -84,8 +84,9 @@ const pathGen = d3.geoPath().projection(proj);
         if (has("#user-input"))    updateUserInput(fips);   // Recourse page only
 
         const row = recourseData.find(r=>String(r.FIPS).padStart(5,"0")===fips);
-  const modelSev = row ? row.severity : "low";   // fallback demo value
-  drawSeverityChart(modelSev, modelSev);
+        const modelSev = row ? row.severity : "medium";
+        drawLollipopChart(fips, modelSev);      // ← NEW
+      
       })
     
       .on("mouseover", (e, d) => {
@@ -94,6 +95,7 @@ const pathGen = d3.geoPath().projection(proj);
         tooltip
           .style("opacity", 0.9)
           .html(`<strong>FIPS ${fips}</strong><br>${c} record${c===1?"":"s"}`)
+          
           .style("left", (e.pageX + 10) + "px")
           .style("top",  (e.pageY - 28) + "px");
         d3.select(e.currentTarget)
@@ -173,9 +175,6 @@ function drawFeatureBar(fips) {
   // 1) Load the entire CSV of instance-level necessity scores
   d3.csv("importance_scores_v4b/instance_necessity_scores.csv", d3.autoType)
     .then(rawData => {
-      // 2) Find the single row whose "c" column matches the clicked FIPS
-      //    Coerce both to strings to avoid type mismatches.
-      //const row = rawData.find(d => String(d.FIPS) === String(fips));
       const row = rawData.find(d => (+d.FIPS) === (+fips));
       if (!row) {
         svg.append("text")
@@ -186,7 +185,7 @@ function drawFeatureBar(fips) {
           .text(`No necessity‐score data for FIPS ${fips}`);
         return;
       }
-      n = 20
+      n = 15
       // 3) Extract the top 15 features by necessity value
       const top15 = extractTopFeatures(row, n);
       // Now top15 is an array like:
@@ -206,7 +205,7 @@ function drawFeatureBar(fips) {
       }
 
       // 5) Define margins & inner dimensions
-      const margin = { top: 40, right: 20, bottom: 60, left: 100 },
+      const margin = { top: 40, right: 20, bottom: 60, left: Math.max(100, W*0.18) },
             innerW = W - margin.left - margin.right,
             innerH = H - margin.top  - margin.bottom;
 
@@ -223,12 +222,16 @@ function drawFeatureBar(fips) {
       // 7) Draw X-axis at the bottom
       svg.append("g")
         .attr("transform", `translate(0, ${margin.top + innerH})`)
-        .call(d3.axisBottom(xScale).ticks(5).tickFormat(d3.format(".2f")));
+        .call(d3.axisBottom(xScale).ticks(5).tickFormat(d3.format(".2f")))
+        .selectAll("text")                   // ① grab every tick label
+.style("font-size","0.95rem");       // ② set any size you like
 
       // 8) Draw Y-axis on the left
       svg.append("g")
         .attr("transform", `translate(${margin.left}, 0)`)
-        .call(d3.axisLeft(yScale));
+        .call(d3.axisLeft(yScale))
+        .selectAll("text")
+.style("font-size","0.95rem");
 
       // 9) Chart title
       svg.append("text")
@@ -251,7 +254,8 @@ function drawFeatureBar(fips) {
         .attr("class", "axis-label")
         .attr("transform", "rotate(-90)")
         .attr("x", - (margin.top + innerH / 2))
-        .attr("y", margin.left - 80)
+        .attr("y", margin.left - 150)
+        .style("font-size","0.95rem") 
         .attr("text-anchor", "middle")
         .text("Feature");
 
@@ -373,38 +377,39 @@ function updateDataDisplay(fips) {
 
   
   
-function updateUserInput(fips) {
-  if (!has("#user-input")) return; 
-  const row = recourseData.find(r => String(r.FIPS).padStart(5,"0") === fips);
-  const container = d3.select("#user-input");
+function updateUserInput(fips){
+  if (!has("#user-input")) return;
 
-  container.selectAll("label, select, p").remove();
+  const row       = recourseData.find(r => +r.FIPS === +fips);
+  const container = d3.select("#user-input").html("");
 
-  if (!row) {
+  if (!row){
     container.append("p").text(`No editable data for FIPS ${fips}`);
     return;
   }
-
-  const levels = ["low","medium","high"];
 
   container.append("label")
            .attr("for","severity-select")
            .text("Set severity: ");
 
-  container.append("select")
-           .attr("id","severity-select")
-           .selectAll("option")
-           .data(levels)
-           .join("option")
-             .attr("value", d => d)
-             .property("selected", d => d === row.severity) // pre-select CSV value
-             .text(d => d.charAt(0).toUpperCase() + d.slice(1))
-             .on("change", function(){
-              const userSev = this.value;
-              console.log(`User set ${fips} → ${userSev}`);
-              drawSeverityChart(row.severity, userSev);    // live update
-            });
+  /* 1) build the <select>  */
+  const sel = container.append("select")
+                       .attr("id","severity-select")
+                       .on("change", function(){
+                          /* 2) when user picks a level, redraw */
+                          drawLollipopChart(selectedFips, this.value);
+                       });
+
+  /* 3) add 3 options */
+  const levels = ["low","medium","high"];
+  sel.selectAll("option")
+     .data(levels)
+     .join("option")
+       .attr("value", d => d)
+       .property("selected", d => d === row.severity)
+       .text(d => d.charAt(0).toUpperCase() + d.slice(1));
 }
+
 
 
 // ─── Severity helpers ────────────────────────────────────────────
@@ -417,19 +422,19 @@ const sevLabels = ["Low","Medium","High"];
  * @param {string} userS   severity from dropdown (same set)
  */
 function drawSeverityChart(modelS, userS){
-  if(!has("#chart")) return;                         // wrong page
-
-  const W = 200, H = 160, margin = {t:20,r:20,b:30,l:40};
+    if(!has("#chart")) return;
+  
+    const box = d3.select("#chart").html("");
+    const W   = box.node().clientWidth;
+    const H   = box.node().clientHeight || 180;   // fallback if zero
+    const margin = {t:20,r:20,b:30,l:40};
+  
 
   // convert to numeric
   const data = [
     {src:"Model", val: sevScale[modelS]},
     {src:"User",  val: sevScale[userS]}
-  ];
-
-  // root
-  const box   = d3.select("#chart");
-  box.selectAll("*").remove();                       // clear previous
+  ];              // clear previous
   const svg   = box.append("svg")
                    .attr("width",  W)
                    .attr("height", H);
@@ -576,6 +581,180 @@ d3.select("#source-btn").on("click", () => {
     alert("Click a county on the map first.");
   }
 });
+
+/* ════════════════  L O L L I P O P   C H A R T  ════════════════ */
+/**
+ * Synthetic “low / medium / high” target generator.
+ * ─ low    = 40 % of model value
+ * ─ medium = model value
+ * ─ high   = model value + 40 % (capped at 1)
+ */
+function severityTarget(val, lvl){
+  if(lvl==="low")    return +d3.format(".3f")(val*0.4);
+  if(lvl==="high")   return +d3.format(".3f")(Math.min(val*1.4,1));
+  return +d3.format(".3f")(val);               // medium
+}
+
+/**
+ * Draw (or refresh) the lollipop chart inside #chart
+ * @param {string} fips      5-digit county code
+ * @param {string} userLvl   “low” | “medium” | “high”
+ */
+function drawLollipopChart(fips, userLvl){
+  if(!has("#chart")) return;
+
+  /* 1) LOAD INSTANCE-LEVEL NECESSITY SCORES (once per call) */
+  d3.csv("importance_scores_v4b/instance_necessity_scores.csv", d3.autoType)
+    .then(raw=>{
+      const row = raw.find(r=> +r.FIPS === +fips);
+      if(!row){
+        d3.select("#chart").html(`<p style="padding:1rem">No necessity data for FIPS ${fips}</p>`);
+        return;
+      }
+
+      /* 2) EXTRACT TOP-5 FEATURES */
+      const top5 = extractTopFeatures(row,5)
+                   .map(d=>({
+                     feature : d.feature,
+                     model   : +d.value,
+                     target  : severityTarget(+d.value, userLvl)
+                   }));
+
+      /* 3) SVG SET-UP  */
+  const box = d3.select("#chart").html("");          // clear
+  const W   = box.node().clientWidth  || 400;
+  const H   = (box.node().clientHeight && box.node().clientHeight>0)
+              ? box.node().clientHeight
+              : 260;                                 // ← NEW fallback
+  const m   = {t:40,r:30,b:40,l:150};
+
+  const svg = box.append("svg")
+                 .attr("viewBox",`0 0 ${W} ${H}`)
+                 .attr("width","100%")
+                 .attr("height","100%");
+      /* 4) SCALES */
+      const x = d3.scaleLinear()
+                  .domain([0, d3.max(top5,d=>Math.max(d.model,d.target)) || 1])
+                  .range([m.l, W-m.r]);
+
+      const y = d3.scaleBand()
+                  .domain(top5.map(d=>d.feature))
+                  .range([m.t, H-m.b])
+                  .padding(0.6);
+
+      /* 5) AXES — bump font-size */
+svg.append("g")
+.attr("transform",`translate(0,${H-m.b})`)
+.call(d3.axisBottom(x).ticks(4))
+.selectAll("text").style("font-size","0.9rem");
+
+svg.append("g")
+.attr("transform",`translate(${m.l},0)`)
+.call(d3.axisLeft(y))
+.selectAll("text").style("font-size","0.9rem");
+
+ /* 6) LOLLIPOPS  –  connector + two circles */
+ const lineGrp = svg.append("g").attr("class","lollis");
+
+ lineGrp.selectAll("line")
+  .data(top5)
+  .join("line")
+    .attr("x1", d=>x(d.model))
+    .attr("x2", d=>x(d.target))
+    .attr("y1", d=>y(d.feature)+y.bandwidth()/2)
+    .attr("y2", d=>y(d.feature)+y.bandwidth()/2)
+    .attr("stroke","#888")
+    .attr("stroke-width",1.5)
+    .attr("marker-end","url(#arrowHead)")
+    .attr("pointer-events","none");
+
+ svg.append("defs").append("marker")
+ .attr("id","arrowHead")
+ .attr("viewBox","0 0 10 10")
+ .attr("refX",10).attr("refY",5)
+ .attr("markerWidth",8).attr("markerHeight",8)
+ .attr("orient","auto-start-reverse")  // ← arrow points to x2,y2
+.append("path")
+ .attr("d","M 0 0 L 10 5 L 0 10 z")
+ .attr("fill","#000");
+
+      /* circles */
+/* circles ─────────────────────────────────────────────── */
+const circles = svg.append("g");
+const fmt = d3.format(".3f");
+
+/* ➊  model (red) – always drawn */
+circles.selectAll(".model")
+  .data(top5)
+  .join("circle")
+    .attr("class","model")
+    .attr("cx",d=>x(d.model))
+    .attr("cy",d=>y(d.feature)+y.bandwidth()/2)
+    .attr("r",6)
+    .attr("fill","#e41a1c")
+    .on("mouseover",(e,d)=>{
+        tooltip.style("opacity",0.9)
+               .html(`<strong>${d.feature}</strong><br>Current&nbsp;value: ${fmt(d.model)}`)
+               .style("left",(e.pageX+8)+"px")
+               .style("top",(e.pageY-28)+"px");
+    })
+    .on("mouseout",()=>tooltip.style("opacity",0));
+
+// ── TARGET (black) ──────────────────────────────────────────────
+circles.selectAll(".target")
+  .data(top5.filter(d=>d.target!==d.model))     // draw only if different
+  .join("circle")
+    .attr("class","target")
+    .attr("cx",d=>x(d.target))
+    .attr("cy",d=>y(d.feature)+y.bandwidth()/2)
+    .attr("r",6)
+    .attr("fill","#000")
+    .on("mouseover",(e,d)=>{
+        tooltip.style("opacity",0.9)
+               .html(`<strong>${d.feature}</strong><br>User&nbsp;target: ${fmt(d.target)}`)
+               .style("left",(e.pageX+8)+"px")
+               .style("top",(e.pageY-28)+"px");
+    })
+    .on("mouseout",()=>tooltip.style("opacity",0));
+      /* 7) TITLE */
+      svg.append("text")
+   .attr("x",W/2).attr("y",m.t-24)
+   .attr("text-anchor","middle")
+   .attr("font-size","1.05rem")
+   .attr("font-weight",600)
+   .text("An Interventional Approach to Real-Time Disaster Assessment via Causal Attribution");
+
+   /* 8) LEGEND — red vs black */
+/* ── LEGEND : vertical, red vs black ───────────────────────── */
+const legendData = [
+  { lbl: "Current value", color: "#e41a1c" },
+  { lbl: "User target",   color: "#000"    }
+];
+
+/* anchor legend in the upper-right corner */
+const legend = svg.append("g")
+  .attr("transform", `translate(${W - m.r - 160}, ${m.t - 12})`)
+  .attr("font-size", ".85rem");
+
+/* one <g> per row */
+const row1 = legend.selectAll("g")
+  .data(legendData)
+  .join("g")
+    .attr("transform", (d, i) => `translate(0, ${i * 18})`);
+
+row1.append("rect")
+    .attr("width", 12)
+    .attr("height",12)
+    .attr("fill", d => d.color);
+
+row1.append("text")
+    .attr("x", 18)
+    .attr("y", 10)
+    .text(d => d.lbl);
+
+    });
+}
+
 
 // ------------- clear on year/change --------------
 function drawAll() {
