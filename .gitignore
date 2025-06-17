@@ -8,3 +8,5 @@ old.*
 # venv
 .venv
 py310_venv
+check_fips.py
+data_cleaning.py
