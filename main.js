@@ -8,6 +8,7 @@ function has(sel) {
 let allData, countiesTopo;
 let recourseData = [];          
 let sourceNecessity = []; 
+let nriData = [];
 let selectedFips = null;
 const tooltip = d3.select("#tip");
 // ────────────────────────────────────────────────────────────────────────────────
@@ -16,14 +17,24 @@ Promise.all([
   d3.csv("data_features.csv", d3.autoType),
   d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json"),
   d3.csv("dummy_algo.csv",     d3.autoType),
+  d3.csv("nri_county_level.csv", d3.autoType),
   d3.csv("models/disaster-assessment-tool/importance_scores_v4b/source_necessity_scores.csv", d3.autoType)
 
-]).then(([rows, us, tempRows, sourceRows]) => {
+]).then(([rows, us, tempRows, nriRows, sourceRows]) => {
   allData           = rows;
   countiesTopo      = topojson.feature(us, us.objects.counties).features;
   recourseData      = tempRows;
-  sourceNecessity   = sourceRows;          // <–– NEW
+  nriData         = nriRows;
+  sourceNecessity   = sourceRows;          
+  const page = window.location.pathname;
+  if (page.includes("index.html") || page.endsWith("/")) {
+    // Attribution page: allow NRI toggle
   drawAll();
+    d3.select("#map-mode").on("change", drawAll);
+  } else {
+    // Simulation & Recourse pages: always show the data_features choropleth
+    drawMap(allData);
+  }
 })
 .catch(err => console.error("Data load error:", err));
 
@@ -126,40 +137,43 @@ const pathGen = d3.geoPath().projection(proj);
   .text("Select a county!");
 
   // 6) (Optional) Legend: “Blue = county in data_features.csv; Light gray = not in data”
+  // 5) Legend: “Blue = county in data_features.csv; Light gray = not in data”
   const legend = svg.append("g")
-    .attr("transform", `translate(20, ${H - 60})`);
+  .attr("transform", `translate(${W - 180}, 60)`);
 
   const legendData = [
     { color: presentColor, label: "Counties of Importance" },
     { color: absentColor,  label: "Other Counties" }
   ];
 
-  legend.selectAll("rect")
+legend.selectAll("g")
     .data(legendData)
-    .join("rect")
-      .attr("x",   (d,i) => i * 180)
-      .attr("y",     0)
-      .attr("width", 20)
-      .attr("height",20)
-      .attr("fill",  d => d.color);
-
-  legend.selectAll("text")
-    .data(legendData)
-    .join("text")
-      .attr("x", (d,i) => i * 180 + 26)
-      .attr("y", 14)
+  .join("g")
+    .attr("transform", (d,i) => `translate(0, ${i * 24})`)  // 24px between rows
+  .each(function(d) {
+    const g = d3.select(this);
+    g.append("rect")
+      .attr("width",  20)
+      .attr("height", 20)
+      .attr("fill",   d.color)
+      .attr("stroke", "#999");
+    g.append("text")
+      .attr("x",  26)
+      .attr("y",  14)
       .style("font-size","12px")
-      .text(d => d.label);
+      .text(d.label);
+  });
 
   // 7) Title
   svg.append("text")
-    .attr("x", W/2).attr("y", 32)
-    .attr("text-anchor", "middle")
-    .style("font-weight", "600")
+    .attr("x", W/2).attr("y", 30)
+    .attr("text-anchor","middle")
+    .style("font-size","1.2rem")
+    .style("font-weight","600")
     .text("All Counties (from data_features.csv)");
 }
 
-function extractTopFeatures(row, n = 20) {
+function extractTopFeatures(row, n) {
   // 1) Collect all keys that start with "necessity_"
   const featureData = [];
   Object.keys(row).forEach(key => {
@@ -204,7 +218,7 @@ function drawFeatureBar(fips) {
           .text(`No necessity‐score data for FIPS ${fips}`);
         return;
       }
-      n = 20
+      n = 15
       // 3) Extract the top 15 features by necessity value
       const top15 = extractTopFeatures(row, n);
       // Now top15 is an array like:
@@ -672,6 +686,136 @@ function drawSourceBar(fips){
        .text(d=>d.src);
 }
 
+// helper to capitalize words
+function titleCase(str) {
+  return str.replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// rebuild the legend based on current mode
+function updateLegend(mode) {
+  const lg = d3.select("#legend").html("");
+
+  if (mode === "nri") {
+    // Must match your RISK_RATNG order
+    const ratings = [
+      "very low","relatively low","relatively moderate",
+      "moderate","relatively high","very high"
+    ];
+    // yellow → red ramp
+    const colors = [
+      "#ffffcc","#ffeda0","#feb24c",
+      "#fd8d3c","#f03b20","#bd0026"
+    ];
+
+    ratings.forEach((r,i) => {
+      const item = lg.append("div").attr("class","legend-item");
+      item.append("div")
+          .attr("class","legend-swatch")
+          .style("background", colors[i]);
+      item.append("span").text(titleCase(r));
+    });
+
+  } else {
+    // Data Features mode
+    const items = [
+      { label: "County in data_features.csv", color: "#3182bd" },
+      { label: "Other county",               color: "#eee"    }
+    ];
+    items.forEach(d => {
+      const item = lg.append("div").attr("class","legend-item");
+      item.append("div")
+          .attr("class","legend-swatch")
+          .style("background", d.color);
+      item.append("span").text(d.label);
+    });
+  }
+}
+
+
+function drawMapNRI() {
+  const svg = d3.select("#map"),
+        W   = svg.node().clientWidth,
+        H   = svg.node().clientHeight;
+  svg.selectAll("*").remove();
+
+  const proj    = d3.geoAlbersUsa()
+                    .fitSize([W,H], {type:"FeatureCollection",features:countiesTopo});
+  const pathGen = d3.geoPath().projection(proj);
+  svg.attr("viewBox", `0 0 ${W} ${H}`);
+
+  // Build a map: FIPS → risk_rating
+  const nriMap = new Map(nriData.map(r => {
+    const f = String(r.STCOFIPS).padStart(5,"0");
+    return [f, String(r.RISK_RATNG).toLowerCase()];
+  }));
+
+  const ratings = [
+    "very low","relatively low","relatively moderate",
+    "moderate","relatively high","very high"
+  ];
+  
+  // define a matching array of hexes
+  const colors = [
+    "#ffffcc","#ffeda0","#feb24c",
+    "#fd8d3c","#f03b20","#bd0026"
+  ];
+  
+  const colorRamp = d3.scaleOrdinal()
+    .domain(ratings)
+    .range(colors);
+
+  // place the legend in bottom-left, just like drawMap()
+  const legend = svg.append("g")
+  .attr("transform", `translate(${W - 150}, 60)`);
+ratings.forEach((r, i) => {
+  legend.append("rect")
+    .attr("x",   0)
+    .attr("y",   i * 20)
+    .attr("width",  20)
+    .attr("height", 20)
+    .attr("fill",   colors[i])   // now defined!
+    .attr("stroke", "#999");
+
+  legend.append("text")
+    .attr("x",  26)
+    .attr("y",  i * 20 + 14)
+    .style("font-size", "12px")
+    .text(r.charAt(0).toUpperCase() + r.slice(1));
+});
+
+
+  svg.append("text")
+   .attr("x", W/2).attr("y", 28)
+   .attr("text-anchor","middle")
+   .style("font-size","1.2rem")
+   .style("font-weight","600")
+   .text("National Risk Index at a county level");
+
+
+  svg.selectAll("path")
+    .data(countiesTopo)
+    .join("path")
+      .attr("d", pathGen)
+      .attr("fill", d => {
+        const fips  = String(d.id).padStart(5,"0"),
+              rating = nriMap.get(fips);
+        return rating ? colorRamp(rating) : "#eee";
+      })
+      .attr("stroke","#999")
+      .attr("stroke-width",1)
+    .on("mouseover",(e,d)=>{
+      const f = String(d.id).padStart(5,"0"),
+            r = nriMap.get(f) || "none";
+      d3.select("#tip")
+        .style("opacity",0.9)
+        .html(`<strong>FIPS ${f}</strong><br>Risk: ${r}`)
+        .style("left",(e.pageX+8)+"px")
+        .style("top",(e.pageY-28)+"px");
+    })
+    .on("mouseout",()=>d3.select("#tip").style("opacity",0))
+  ;
+}
+
 
 d3.select("#source-btn").on("click", () => {
   if (selectedFips) {
@@ -683,11 +827,30 @@ d3.select("#source-btn").on("click", () => {
 
 // ------------- clear on year/change --------------
 function drawAll() {
-  drawMap(allData);
+  const mode = d3.select("#map-mode").property("value");
+
+  if (mode === "nri")  drawMapNRI();
+  else                  drawMap(allData);
+
+  // rebuild the legend
+  updateLegend(mode);
+
+  // clear any side‐chart
   d3.select("#bar").selectAll("*").remove();
 }
 
+
 // your existing boot call:
 drawAll();
-// ensure all three charts re‑render on window resize
+
+// 2) Then delegate change events to the document so that
+//    no matter when or how the checkbox is inserted, we catch it.
+document.addEventListener("change", e => {
+  if (e.target && e.target.id === "checkbox-nri") {
+    drawAll();
+  }
+});
+
+// 3) And keep your resize handler
 window.addEventListener("resize", drawAll);
+
