@@ -45,7 +45,7 @@
     <!-- Left: US county choropleth;  stolen from index.html -->
     <div class="left-panel">
       <svg id="map" class="chart" role="img"></svg>
-      <p id="county_selected_text">County selected: </p>
+      <!-- <p id="county_selected_text">County selected: </p> -->
     </div>
 
     <!-- Right: DAG, feature mixer -->
@@ -70,9 +70,9 @@
           <h3>Select DAG</h3>
           <select id="dagSelect">
             <option value="">Choose a DAG...</option>
-            <option value="dag1">DAG 1: Independent Effects</option>
-            <option value="dag2">DAG 2: Infrastructure Mediator (Wind/Fire)</option>
-            <option value="dag3">DAG 3: Flood Drives All Paths</option>
+            <option value="DAG_1_Independent">DAG 1: Independent Effects</option>
+            <option value="DAG_2_Infrastructure_Mediator">DAG 2: Infrastructure Mediator (Wind/Fire)</option>
+            <option value="DAG_3_Flood_Driven">DAG 3: Flood Drives All Paths</option>
           </select>
           
           <!-- <div class="toggle-section">
@@ -106,7 +106,7 @@
           
         </div>
         <div class="grid-section" style="height: 100%;">
-          <button class="grid-section-button">
+          <button id="compute_result_button" class="grid-section-button">
             <h2>Compute Result</h2>
           </button>
         </div>
@@ -125,13 +125,13 @@
       
       <div class="dag-container">
         <div class="dag-nodes">
-          <div class="dag-node" data-node="dag1">
+          <div class="dag-node" data-node="DAG_1_Independent">
             <img src="assets/three_DAGs_v1-1.png" alt="DAG 1">
           </div>
-          <div class="dag-node" data-node="dag2">
+          <div class="dag-node" data-node="DAG_2_Infrastructure_Mediator">
             <img src="assets/three_DAGs_v1-2.png" alt="DAG 2">
           </div>
-          <div class="dag-node" data-node="dag3">
+          <div class="dag-node" data-node="DAG_3_Flood_Driven">
             <img src="assets/three_DAGs_v1-3.png" alt="DAG 3">
           </div>
         </div>

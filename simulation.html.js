@@ -270,12 +270,20 @@ function sendSliderData(label, value) {
 //     }
 // });
 
-
-
+// Wait for CSV data to be ready before initializing sliders
+window.addEventListener('csvDataReady', function(event) {
+    console.log('CSV data ready, initializing sliders...');
+    
+    // Setup slider value updates
+    initializeSliders();
+    console.log("sliders initialized!");
+});
 
 // PAGE LOAD event listener
 // Interactive functionality
 document.addEventListener('DOMContentLoaded', function() {
+
+
     // Initialize when page loads
     const modalSwitcher1 = new ModalContentSwitcher('feature-modal');
     const modalSwitcher2 = new ModalContentSwitcher('feature-modal');
@@ -352,10 +360,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Make modals draggable
     setupDraggableModals();
+    
+    // Small delay to ensure create_sliders.js had a chance to run
+    setTimeout(() => {
+        // Check if CSV data is already available
+        if (window.csvData && window.csvData.length > 0) {
+            console.log('CSV data already available, initializing sliders...');
+            
+            // Setup slider value updates
+            initializeSliders();
+            console.log("sliders initialized!");
+        }
+    }, 100);
 
-    // Setup slider value updates
-    initializeSliders();
-    console.log("sliders initialized!");
     // Listen for custom slider events
     // document.addEventListener('sliderChanged', function(event) {
     //     console.log('Slider changed event received:', event.detail);
@@ -364,40 +381,52 @@ document.addEventListener('DOMContentLoaded', function() {
     //     value_para.textContent = event.detail.value;
     // });
 
+    // listen to compute result and call backend
+    // const dagSelect = document.getElementById('dagSelect');
+    const computeBtn = document.getElementById('compute_result_button');
 
-    // Toggle button functionality
-    // const toggleAlgo = document.getElementById('toggleAlgo');
-    // const toggleRecourse = document.getElementById('toggleRecourse');
-    
-    // toggleAlgo.addEventListener('click', function() {
-    // this.classList.add('active');
-    // toggleRecourse.classList.remove('active');
-    // });
-    
-    // toggleRecourse.addEventListener('click', function() {
-    // this.classList.add('active');
-    // toggleAlgo.classList.remove('active');
-    // });
-    
-    
-    
-    // Map interaction placeholder
-    // const map = document.getElementById('map');
-    // map.addEventListener('click', function() {
-    // this.textContent = 'Map clicked - Loading data...';
-    
-    // setTimeout(() => {
-    //     this.textContent = 'Map visualization area';
-    // }, 1500);
-    // });
-    
-    // Drop selection functionality
-    // const dropSelect = document.getElementById('dropSelect');
-    // dropSelect.addEventListener('change', function() {
-    // if (this.value) {
-    //     console.log(`Variable "${this.value}" selected for dropping`);
-    // }
-    // });
+    computeBtn.addEventListener('click', () => {
+        // console.log(csvData);
+        const dagKey = dagSelect.value;
+        if (!selectedFips) {
+            return alert('Select a county first!');
+        }
+        if (!dagKey) {
+            return alert('Please choose a DAG from the dropdown.');
+        }
+        
+        // const selectedFips = window.selectedFips;
+        // const sampleDict = extractDataByFIPS(csvData, selectedFips);
+        // const sampleDict = extractDataByFIPS(csvData, 12081); // test
+        
+        console.log(original_dict);
+        console.log(interv_dict);
+        if (!original_dict || !interv_dict) {
+            console.warn("Original dict and intervention dict not defined!")
+        }
+        // call backend
+        fetch('http://localhost:5000/simulate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            sample_dict: original_dict,  // adjust if sample has more fields
+            interventions: interv_dict,
+            dag_key: dagKey
+        })
+        })
+        .then(r => r.json())
+        .then(({ original_label, counterfactual_label }) => {
+            document.getElementById('value').textContent =
+            `Original Prediction: ${original_label}`;
+            document.getElementById('resValue').textContent =
+            `Counterfactual Prediction: ${counterfactual_label}`;
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Error computing counterfactual. See console for details.");
+        });
+    });
+
 });
 
 
