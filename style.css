@@ -10,8 +10,8 @@
   --pad:20px; 
   --shadow:0 1px 3px rgba(0,0,0,.06);
 
-  --bg-start:   #e3f2fd;
-  --bg-end:     #f9fafc;
+  --bg-start:   #cfe2ff;
+  --bg-end:     #f0f4ff;
 
   /* a matching 3‑step color ramp */
   --scale-low:  #ffffcc;
