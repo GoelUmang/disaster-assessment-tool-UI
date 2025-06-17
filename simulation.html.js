@@ -8,6 +8,9 @@ let isDragging = false;
 let dragOffset = { x: 0, y: 0 };
 let currentModal = null;
 
+// TODO: remove this when backend is implemented
+// to temporarily store the configurations of the interventions as a snapshot modal
+let ft_int_configs = [];
 
 function setupDraggableModals() {
     const modalHeaders = document.querySelectorAll('.modal-header');
@@ -64,7 +67,14 @@ function closeModal(modalId) {
 class ModalContentSwitcher {
     constructor(modalId) {
         this.modal = document.getElementById(modalId);
-        this.currentSection = 'feature_modal_menu';
+        if (modalId == "feature-modal") {
+            this.currentSection = 'feature_modal_menu';
+            
+        }
+        else if (modalId == "snapshot-modal") {
+            this.currentSection = 'snapshot_modal_main_content';
+            
+        }
         this.init();
     }
     
@@ -147,6 +157,37 @@ function getExponentialValue(sliderValue) {
     return Math.pow(10, (sliderValue / 100) * 9);
 }
 
+// update the config snapshot pop-up
+// TODO: edit this to receive JSON packages when backend is implemented
+function updateSnapshot(json_package) {
+    
+    // JSON PACHGE
+
+    // update the p element on the modal
+    const content_text_elemt = document.getElementById("snapshot_modal_content_text");
+    
+    if (ft_int_configs.length === 0) {
+        content_text_elemt.innerHTML = '<em>No data yet...</em>';
+        return;
+    }
+
+    let html = '';
+    ft_int_configs.forEach(item => {
+        // const date = new Date(item.timestamp).toLocaleString();
+        html += `
+            <div class="data-item">
+                <span class="label">${item.label}:</span>
+                <span class="value">${item.value}</span>
+                
+            </div>
+        `;
+        //<span class="timestamp">${date}</span>
+    });
+    
+    content_text_elemt.innerHTML = html;
+    console.log("snapshot_modal_content_text" + " text updated!");
+}
+
 // Event call when slider changed
 function sliderChanged (data) {
 
@@ -163,7 +204,22 @@ function sendSliderData(label, value) {
     };
     
     console.log('Sending slider data:', data);
+    // see if old data exist and is in the array
+    // Find index of existing data with matching label
+    const existingIndex = ft_int_configs.findIndex(item => item.label === data.label);
     
+    if (existingIndex !== -1) {
+        // Replace existing data
+        ft_int_configs[existingIndex] = data;
+    } else {
+        // Add new data if no matching label found
+        ft_int_configs.push(data);
+    }
+
+    console.log(ft_int_configs);
+    // TODO: remove this when backend is implemented
+    updateSnapshot(data);
+
     // Option 1: Send via fetch (REST API)
     /*
     fetch('/api/transitions/slider', {
@@ -193,10 +249,11 @@ function sendSliderData(label, value) {
     */
     
     // Option 3: Store in global variable for later use
-    window.transitionSettings = window.transitionSettings || {};
-    window.transitionSettings[label.toLowerCase()] = value;
+    // window.transitionSettings = window.transitionSettings || {};
+    // window.transitionSettings[label.toLowerCase()] = value;
     
     // Option 4: Trigger custom event
+    // idk about this one
     // document.dispatchEvent(new CustomEvent('sliderChanged', {
     //     detail: data
     // }));
@@ -220,8 +277,10 @@ function sendSliderData(label, value) {
 // Interactive functionality
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize when page loads
-    const modalSwitcher = new ModalContentSwitcher('feature-modal');
+    const modalSwitcher1 = new ModalContentSwitcher('feature-modal');
+    const modalSwitcher2 = new ModalContentSwitcher('feature-modal');
     console.log("modalSwitcher initialized!");
+
     // DAG selection functionality
     const dagSelect = document.getElementById('dagSelect');
     const dagNodes = document.querySelectorAll('.dag-node');
@@ -248,6 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Get all buttons with data-modal attribute
+    // this works for generally defined modals
     const buttons = document.querySelectorAll('[data-modal]');
     const modals = document.querySelectorAll('.modal');
     const closeButtons = document.querySelectorAll('.close-btn');

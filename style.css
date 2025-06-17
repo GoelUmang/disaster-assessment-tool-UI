@@ -489,6 +489,7 @@ select {
 }
 
 .dag-node {
+  background-color: white;
   border: 1px solid var(--border);
   padding: 0.5rem;
   text-align: center;
@@ -522,6 +523,14 @@ select {
 
 .barchart-content {
   background-color: aliceblue;
+}
+
+#county_selected_text {
+  position: absolute;
+  top: 10px;        /* Distance from the top edge */
+  right: 10px;      /* Distance from the right edge */
+  margin: 0;        /* Remove default paragraph margins */
+  z-index: 10;      /* Ensure it appears above the SVG content */
 }
 
 /* ------- svg interactions ------- */
@@ -889,6 +898,9 @@ header .controls{
   font-size: 18px;
   border-bottom: 2px solid var(--border);
   padding-bottom: 10px;
+}
+.modal-content-section p {
+  font-size: small;
 }
 
 .back-btn {

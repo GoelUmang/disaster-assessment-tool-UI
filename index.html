@@ -23,9 +23,10 @@
 
 <body>
   <header>
-    <h1>Disaster Bench</h1>
+    <!-- <h1>Disaster Bench</h1> -->
+    <h1></h1>
     <nav class="controls">
-      <a href="index.html" class="nav-btn active">Attribution Score</a>
+      <a href="index.html" class="nav-btn">Attribution Score</a>
       <a href="simulation.html" class="nav-btn">Simulation through intervention</a>
       <a href="algorithmic_recouse.html" class="nav-btn">Algorithmic recourse</a>
     </nav>
@@ -35,6 +36,7 @@
   <main id="viz">
     <!-- Left: US county choropleth -->
     <svg id="map" class="chart" role="img"></svg>
+    <p id="county_selected_text"></p>
 
     <!-- Right: features bar + Dynamic World panel -->
     <!-- <div class="side-charts">
