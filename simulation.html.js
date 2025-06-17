@@ -197,6 +197,7 @@ function sliderChanged (data) {
 
 // Send slider data to backend
 function sendSliderData(label, value) {
+    // TODO: interv_dict, find the entry, and put these input in
     const data = {
         label: label,
         value: value,
