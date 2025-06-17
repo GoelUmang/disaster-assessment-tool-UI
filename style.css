@@ -6,6 +6,7 @@
   --border:#dfe3e8;
   --txt:#24313f;
   --accent:#006dba;
+  --dark-accent: #004a7a;
   --radius:8px;
   --pad:20px; 
   --shadow:0 1px 3px rgba(0,0,0,.06);
@@ -171,10 +172,10 @@ button:hover{
   transition: background-color 0.2s;
 }
 .nav-btn:hover {
-  background: #004a7a;
+  background: var(--dark-accent);
 }
 .nav-btn.active {
-  background: #004a7a;
+  background: var(--dark-accent);
   pointer-events: none;
   cursor: not-allowed;
 }
@@ -417,7 +418,7 @@ select {
 .grid-box {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto auto;
+  grid-template-rows: auto auto auto;
   gap: 0.3rem;
   border: 1px solid var(--border);
   padding: 0.3rem;
@@ -432,7 +433,6 @@ select {
   position: relative;
   min-height: 0;
 }
-
 .grid-section h2 {
   margin: 0 0 8px 0;
   font-size: 1.2rem;
@@ -441,15 +441,16 @@ select {
   padding-bottom: 4px;
   /* text-align: center; */
 }
-
 .grid-section h3 {
   margin: 0 0 0.3rem 0;
   font-size: 0.85rem;
 }
-
 .grid-section p {
   margin: 0;
   font-size: 0.8rem;
+}
+.grid-section-button{
+  padding: 5px;
 }
 
 .toggle-section {
@@ -488,6 +489,7 @@ select {
 }
 
 .dag-node {
+  background-color: white;
   border: 1px solid var(--border);
   padding: 0.5rem;
   text-align: center;
@@ -521,6 +523,14 @@ select {
 
 .barchart-content {
   background-color: aliceblue;
+}
+
+#county_selected_text {
+  position: absolute;
+  top: 10px;        /* Distance from the top edge */
+  right: 10px;      /* Distance from the right edge */
+  margin: 0;        /* Remove default paragraph margins */
+  z-index: 10;      /* Ensure it appears above the SVG content */
 }
 
 /* ------- svg interactions ------- */
@@ -888,6 +898,9 @@ header .controls{
   font-size: 18px;
   border-bottom: 2px solid var(--border);
   padding-bottom: 10px;
+}
+.modal-content-section p {
+  font-size: small;
 }
 
 .back-btn {

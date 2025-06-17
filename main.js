@@ -78,14 +78,20 @@ const pathGen = d3.geoPath().projection(proj);
       .attr("stroke-width", 1)
       .on("click", (e, d) => {
         const fips = String(d.id).padStart(5, "0");
-        selectedFips = fips; 
+        selectedFips = fips;
+
+        // Add this part to update the selected county text
+        const row = recourseData.find(r => String(r.FIPS).padStart(5,"0") === fips);
+        const countyName = row ? `${row.County_Name || 'Unknown'}, ${row.State || ''}` : `FIPS ${fips}`;
+        d3.select("#selected-county-text").text(`Selected: ${countyName}`);
+        
         if (has("#bar"))        drawFeatureBar(fips);      // Attribution page only
         if (has("#instance-data")) updateDataDisplay(fips); // Recourse page only
         if (has("#user-input"))    updateUserInput(fips);   // Recourse page only
 
-        const row = recourseData.find(r=>String(r.FIPS).padStart(5,"0")===fips);
-        const modelSev = row ? row.severity : "medium";
-        drawLollipopChart(fips, modelSev);
+        // const row = recourseData.find(r=>String(r.FIPS).padStart(5,"0")===fips);
+        const modelSev = row ? row.severity : "low";   // fallback demo value
+        drawSeverityChart(modelSev, modelSev);
       })
     
       .on("mouseover", (e, d) => {
@@ -107,7 +113,19 @@ const pathGen = d3.geoPath().projection(proj);
           .attr("stroke-width", 1);
       });
 
-  // 5) (Optional) Legend: “Blue = county in data_features.csv; Light gray = not in data”
+  // 5) Add selected county text in top right
+  const selectedText = svg.append("text")
+  .attr("id", "selected-county-text")
+  .attr("x", W - 20)  // 20px from right edge
+  .attr("y", 30)      // 30px from top
+  .attr("text-anchor", "end")
+  .style("font-size", "16px")
+  .style("font-weight", "600")
+  .style("fill", "#333")
+  .style("background", "rgba(255,255,255,0.8)")
+  .text("Select a county!");
+
+  // 6) (Optional) Legend: “Blue = county in data_features.csv; Light gray = not in data”
   const legend = svg.append("g")
     .attr("transform", `translate(20, ${H - 60})`);
 
@@ -133,7 +151,7 @@ const pathGen = d3.geoPath().projection(proj);
       .style("font-size","12px")
       .text(d => d.label);
 
-  // 6) Title
+  // 7) Title
   svg.append("text")
     .attr("x", W/2).attr("y", 32)
     .attr("text-anchor", "middle")
