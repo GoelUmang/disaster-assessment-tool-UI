@@ -42,7 +42,7 @@ button, .dropbtn, .bar-label{
 *{box-sizing:border-box}
 html,body{
   margin:0;
-  height:120%; /* increased a little */
+  height:100%;
   font-family:system-ui,sans-serif;
   background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
   color:var(--txt);
@@ -491,7 +491,7 @@ select {
 .dag-node {
   background-color: white;
   border: 1px solid var(--border);
-  padding: 0.5rem;
+  padding: 0.1rem;
   text-align: center;
   cursor: pointer;
   flex: 1;
@@ -501,7 +501,7 @@ select {
 }
 .dag-node img {
   /* max-width: 100px; */
-  max-height: 300px;
+  max-height: 300px; /* might need to change... */
   display: block;
   /* margin: 0 auto 5px; */
 }
