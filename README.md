@@ -66,11 +66,11 @@ We provide three structural causal graphs (DAGs):
 
 ## Models
 
-| Model Variant | Architecture | DAG Used | Macro-F1 |
+| Model Variant | Architecture | DAG Used | Test-Accuracy |
 | ------------- | ------------ | -------- | -------- |
-| MLP-5Layer    | (256→16)     | DAG 1    | 0.54     |
-| SCM-RF        | RF per node  | DAG 2    | 0.45     |
-| SCM-RF        | RF per node  | DAG 3    | 0.42     |
+| RF            | 100 est.     | DAG 1    | 0.65     |
+| SCM-RF        | RF Reg./Cls  | DAG 2    | 0.66     |
+| SCM-RF        | RF Reg./Cls  | DAG 3    | 0.63     |
 
 We use the best-performing models for simulation and recourse generation.
 
