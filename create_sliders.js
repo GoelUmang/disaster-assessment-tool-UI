@@ -9,6 +9,7 @@
 
 let csvData = [];
 let filteredData = {};
+window.interv_dict = {};
 
 // Define the specific columns we're interested in
 const newsColumns = [
@@ -318,7 +319,12 @@ function createSlider1(columnName) {
     <span>${columnName}</span>
     <span class="slider-value" id="${columnName}-value">100</span>
   </div>
-  <input type="range" min="0" max="1" value="0.5" step="0.00000001" class="slider" id="${columnName}-slider" data-label="${columnName}">
+<input
+     type="range" min="0" max="1" value="0.5" step="0.00000001"
+    class="slider"
+     id="${columnName}-slider"
+     data-label="${columnName}"
+     data-column="${columnName}">
 </div>`;
 }
 
@@ -446,7 +452,7 @@ function generateSlidersFromData() {
 }
 
 function addSliderListeners(feature_cat) {
-    const sliders = document.querySelectorAll('#' + feature_cat + ' .slider');
+    const sliders = document.querySelectorAll('#feature-modal .slider');
     
     sliders.forEach(slider => {
         slider.addEventListener('input', function() {
@@ -454,6 +460,10 @@ function addSliderListeners(feature_cat) {
             if (valueSpan) {
                 valueSpan.textContent = this.value;
             }
+            // 2) record the intervention
+      const col = this.getAttribute('data-column') || this.getAttribute('data-label');
+      window.interv_dict[col] = parseFloat(this.value);
+      console.log('interv_dict →', window.interv_dict);
         });
     });
 }
