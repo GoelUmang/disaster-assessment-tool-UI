@@ -5,6 +5,7 @@
 
 // for snapshot modal
 
+// it is very messy rn!
 
 // Global variables - use window object to avoid redeclaration errors
 window.fipsUpdater = window.fipsUpdater || {};
@@ -197,9 +198,9 @@ function extractDataByFIPS(csvData, selectedFips) {
     };
 
     return {
-        news: extractGroup(window.newsColumns),
-        reddit: extractGroup(window.redditColumns),
-        transitions: extractGroup(window.transitionColumns)
+        ...extractGroup(window.newsColumns),
+        ...extractGroup(window.redditColumns),
+        ...extractGroup(window.transitionColumns)
     };
 }
 
@@ -220,23 +221,24 @@ function updateSlidersForFips(fipsCode) {
   
   console.log(`Updating sliders for FIPS: ${fipsCode}`);
   
-  // Update News sliders
-  const newsColumns = ['News_Trees', 'News_Power Lines', 'News_Roofs', 'News_Buildings', 'News_Vehicles', 'News_Agriculture', 'News_Infrastructure'];
-  newsColumns.forEach(column => {
-    const value = data[column];
-    if (value !== undefined && value !== null) {
-      updateSlider(`news_${column.split('_')[1].toLowerCase()}`, value);
-    }
-  });
+    // Update News sliders
+    const newsColumns = ['news_trees', 'news_power_lines', 'news_roofs', 'news_buildings', 'news_vehicles', 'news_agriculture', 'news_infrastructure'];
+    newsColumns.forEach(column => {
+        const value = data[column];
+        if (value !== undefined && value !== null) {
+            updateSlider(column, value);
+        }
+    });
   
-  // Update Reddit sliders
-  const redditColumns = ['Reddit_Trees', 'Reddit_Power Lines', 'Reddit_Roofs', 'Reddit_Buildings', 'Reddit_Vehicles', 'Reddit_Agriculture', 'Reddit_Infrastructure'];
-  redditColumns.forEach(column => {
-    const value = data[column];
-    if (value !== undefined && value !== null) {
-      updateSlider(`reddit_${column.split('_')[1].toLowerCase()}`, value);
-    }
-  });
+    // Update Reddit sliders
+    const redditColumns = ['reddit_trees', 'reddit_power_lines', 'reddit_roofs', 'reddit_buildings', 'reddit_vehicles', 'reddit_agriculture', 'reddit_infrastructure'];
+    redditColumns.forEach(column => {
+        const value = data[column];
+        if (value !== undefined && value !== null) {
+            updateSlider(column, value);
+        }
+    });
+
   
   // Update transition sliders with area normalization (if they exist)
   const countyAreaValue = data['county_area_m2'];
@@ -391,13 +393,19 @@ document.addEventListener('fipsChanged', function(event) {
     console.log(`FIPS changed via custom event: ${newFips}`);
     updateSlidersForFips(newFips);
     // console.log(findDataForFips(newFips));
+
+    // Assign original dictionary with the function output
     original_dict = extractDataByFIPS(newFips);
     if (!original_dict) {
         console.warn("County did not generate dict from csv!")
     }
+    // if not edited, interv_dict remains empty
+    
+    
     // console.log("New row from new FIPS: ");
     // console.log(original_dict);
     window.original_dict = original_dict;
+    window.interv_dict = interv_dict;
     
   } else {
     console.log('FIPS set to null via custom event - no sliders updated');

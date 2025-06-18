@@ -17,10 +17,10 @@ from sklearn.metrics import accuracy_score, f1_score
 from sklearn.preprocessing import LabelEncoder, RobustScaler
 
 # ------------------ CONFIG ------------------ #
-DATA_PATH = "../data/data_features.csv"
-GROUPINGS_PATH = "../assets/groupings/feature_groupings.csv"
-DAG_PATH = "../assets/dags/dag_structures.json"
-OUTPUT_BASE = "../assets/full_features_v6"
+DATA_PATH = "./data_features.csv"
+GROUPINGS_PATH = "./models/disaster-assessment-tool/assets/groupings/feature_groupings.csv"
+DAG_PATH = "./models/disaster-assessment-tool/assets/dags/dag_structures.json"
+OUTPUT_BASE = "./models/disaster-assessment-tool/assets/full_features_v6"
 TARGET_COL = "Property_Damage_GT"
 
 # ------------------ DAG HELPERS ------------------ #
@@ -194,9 +194,9 @@ def run_simulation():
     
     Expected JSON payload:
     {
-        "sample_dict": {...},  # Your sample data
-        "interventions": {...},  # Intervention parameters
-        "dag_key": "DAG_2_Infrastructure_Mediator"  # Optional, defaults to DAG_2
+        "original_dict": {...},  # Original data dictionary
+        "interventions_dict_dict": {...},  # interventions_dict dictionary
+        "dag_key": dag_key # dag key set
     }
     """
     try:
@@ -207,16 +207,16 @@ def run_simulation():
         data = request.get_json()
         
         # Validate required fields
-        if 'sample_dict' not in data:
-            return jsonify({'error': 'Missing required field: sample_dict'}), 400
+        if 'original_dict' not in data:
+            return jsonify({'error': 'Missing required field: original_dict'}), 400
         
-        if 'interventions' not in data:
-            return jsonify({'error': 'Missing required field: interventions'}), 400
+        if 'interventions_dict' not in data:
+            return jsonify({'error': 'Missing required field: interventions_dict'}), 400
         
         # Extract parameters
-        sample_dict = data['sample_dict']
-        interventions = data['interventions']
-        dag_key = data.get('dag_key', 'DAG_2_Infrastructure_Mediator')
+        original_dict = data['original_dict']
+        interventions_dict = data['interventions_dict']
+        dag_key = data.get('dag_key', 'DAG_1_Independent')
         
         # Validate dag_key
         valid_dag_keys = [
@@ -233,8 +233,8 @@ def run_simulation():
         
         # Run your simulation function
         counterfactual_label, original_label = run_scm_counterfactual_simulation(
-            original_sample=sample_dict,
-            interventions_raw=interventions,
+            original_sample=original_dict,
+            interventions_raw=interventions_dict,
             dag_key=dag_key
         )
         
@@ -276,8 +276,8 @@ def run_batch_simulation():
     {
         "simulations": [
             {
-                "sample_dict": {...},
-                "interventions": {...},
+                "original_dict": {...},
+                "interventions_dict": {...},
                 "dag_key": "DAG_2_Infrastructure_Mediator"
             },
             ...
@@ -302,13 +302,13 @@ def run_batch_simulation():
         
         for i, sim in enumerate(simulations):
             try:
-                sample_dict = sim['sample_dict']
-                interventions = sim['interventions']
-                dag_key = sim.get('dag_key', 'DAG_2_Infrastructure_Mediator')
+                original_dict = sim['original_dict']
+                interventions_dict = sim['interventions_dict']
+                dag_key = sim.get('dag_key', 'DAG_1_Independent')
                 
                 counterfactual_label, original_label = run_scm_counterfactual_simulation(
-                    original_sample=sample_dict,
-                    interventions_raw=interventions,
+                    original_sample=original_dict,
+                    interventions_raw=interventions_dict,
                     dag_key=dag_key
                 )
                 
@@ -371,15 +371,15 @@ if __name__ == "__main__":
 
     #-----
     # example:
-    sample_dict = original.iloc[0].to_dict()
-    interventions = {
+    original_dict = original.iloc[0].to_dict()
+    interventions_dict = {
         "transition_6_0": 10,
         "transition_3_6": 10
     }   
     # run this
     run_scm_counterfactual_simulation(
-        original_sample=sample_dict, # transition cols should be div by county_area_m2
-        interventions_raw=interventions,
+        original_sample=original_dict, # transition cols should be div by county_area_m2
+        interventions_raw=interventions_dict,
         dag_key="DAG_2_Infrastructure_Mediator"
         # dag_key="DAG_1_Independent"
         # dag_key="DAG_3_Flood_Driven"

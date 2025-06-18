@@ -3,7 +3,10 @@
 
 // Foo
 
-// global vars
+// Window global vars
+window.original_dict = {};
+window.interv_dict = {};
+// Global vars
 let isDragging = false;
 let dragOffset = { x: 0, y: 0 };
 let currentModal = null;
@@ -405,21 +408,22 @@ document.addEventListener('DOMContentLoaded', function() {
             console.warn("Original dict and intervention dict not defined!")
         }
         // call backend
-        fetch('http://localhost:5000/simulate', {
+        fetch('http://127.0.0.1:5000/simulate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            sample_dict: original_dict,  // adjust if sample has more fields
-            interventions: interv_dict,
+            original_dict: original_dict,  // adjust if sample has more fields
+            interventions_dict: interv_dict,
             dag_key: dagKey
         })
         })
         .then(r => r.json())
-        .then(({ original_label, counterfactual_label }) => {
+        .then(({ results }) => {
+            const { original_label, counterfactual_label } = results;
             document.getElementById('value').textContent =
-            `Original Prediction: ${original_label}`;
+                `Original Prediction: ${original_label}`;
             document.getElementById('resValue').textContent =
-            `Counterfactual Prediction: ${counterfactual_label}`;
+                `Counterfactual Prediction: ${counterfactual_label}`;
         })
         .catch(err => {
             console.error(err);
