@@ -20,7 +20,7 @@ Promise.all([
   d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json"),
   d3.csv("models/disaster-assessment-tool/importance_scores_v4b/instance_necessity_scores.csv", d3.autoType),
   d3.csv("nri_county_level.csv", d3.autoType),
-  d3.csv("models/disaster-assessment-tool/importance_scores_v4b/source_necessity_scores.csv", d3.autoType),
+  d3.csv("enriched_source_necessity_scores.csv", d3.autoType),
   d3.json("recourse_results.json")
 
 ]).then(([dataFeatures, usTopo, instRows, nriRows, srcRows, recJSON]) => {
@@ -124,7 +124,7 @@ const pathGen = d3.geoPath().projection(proj);
         const countyName = row ? `${row.County_Name || 'Unknown'}, ${row.State || ''}` : `FIPS ${fips}`;
         d3.select("#selected-county-text").text(`Selected: ${countyName}`);
         
-        if (has("#bar"))        drawFeatureBar(fips);      // Attribution page only
+        if (has("#bar"))        drawEnrichedInstanceBar(fips);      // Attribution page only
         if (has("#instance-data")) updateDataDisplay(fips); // Recourse page only
         if (has("#user-input"))    updateUserInput(fips);   // Recourse page only
 
@@ -358,64 +358,64 @@ function clearWorldMap() {
 }
 
 // ── Populate Feature, Source, Group dropdowns ──────────────────────────
-d3.csv('models/disaster-assessment-tool/assets/groupings/feature_groupings.csv')
-  .then(rows => {
-    if (!rows.length) return;
+// d3.csv('models/disaster-assessment-tool/assets/groupings/feature_groupings.csv')
+//   .then(rows => {
+//     if (!rows.length) return;
 
-    // auto-detect columns  A = Feature, B = Group, C = Source
-    const cols      = Object.keys(rows[0]);
-    const featKey   = cols[0];         // e.g. "feature"
-    const groupKey  = cols[1];         // e.g. "group"
-    const sourceKey = cols[2];         // e.g. "source"
+//     // auto-detect columns  A = Feature, B = Group, C = Source
+//     const cols      = Object.keys(rows[0]);
+//     const featKey   = cols[0];         // e.g. "feature"
+//     const groupKey  = cols[1];         // e.g. "group"
+//     const sourceKey = cols[2];         // e.g. "source"
 
-    /* ---------- 1.  FEATURES  – checkbox per row ------------------- */
-    const featCont = d3.select('#feature-dropdown .dropdown-content');
-    rows.forEach(r => {
-      const val = r[featKey];
-      const id  = `feat-${val.replace(/\W+/g,'_')}`;
-      const lbl = featCont.append('label').attr('for', id);
-      lbl.append('input')
-         .attr('type','checkbox')
-         .attr('id',   id)
-         .attr('value',val);
-      lbl.append('span').text(` ${val}`);
-    });
+//     /* ---------- 1.  FEATURES  – checkbox per row ------------------- */
+//     const featCont = d3.select('#feature-dropdown .dropdown-content');
+//     rows.forEach(r => {
+//       const val = r[featKey];
+//       const id  = `feat-${val.replace(/\W+/g,'_')}`;
+//       const lbl = featCont.append('label').attr('for', id);
+//       lbl.append('input')
+//          .attr('type','checkbox')
+//          .attr('id',   id)
+//          .attr('value',val);
+//       lbl.append('span').text(` ${val}`);
+//     });
 
-    /* ---------- 2.  SOURCES  – checkbox per unique value ----------- */
-    const uniqueSources = Array.from(new Set(rows.map(r => r[sourceKey])));
-    const srcCont = d3.select('#source-dropdown .dropdown-content');
-    uniqueSources.forEach(s => {
-      const id  = `src-${s.replace(/\W+/g,'_')}`;
-      const lbl = srcCont.append('label').attr('for', id);
-      lbl.append('input')
-         .attr('type','checkbox')
-         .attr('id',   id)
-         .attr('value',s);
-      lbl.append('span').text(` ${s}`);
-    });
+//     /* ---------- 2.  SOURCES  – checkbox per unique value ----------- */
+//     const uniqueSources = Array.from(new Set(rows.map(r => r[sourceKey])));
+//     const srcCont = d3.select('#source-dropdown .dropdown-content');
+//     uniqueSources.forEach(s => {
+//       const id  = `src-${s.replace(/\W+/g,'_')}`;
+//       const lbl = srcCont.append('label').attr('for', id);
+//       lbl.append('input')
+//          .attr('type','checkbox')
+//          .attr('id',   id)
+//          .attr('value',s);
+//       lbl.append('span').text(` ${s}`);
+//     });
 
-    /* ---------- 3.  FEATURE GROUPS  –  single-select list ---------- */
-    const uniqueGroups = Array.from(new Set(rows.map(r => r[groupKey])));
-    const grpCont = d3.select('#group-dropdown .dropdown-content');
+//     /* ---------- 3.  FEATURE GROUPS  –  single-select list ---------- */
+//     const uniqueGroups = Array.from(new Set(rows.map(r => r[groupKey])));
+//     const grpCont = d3.select('#group-dropdown .dropdown-content');
 
-    /** helper: mark selected item */
-    function selectGroup(g){
-      grpCont.selectAll('a').classed('selected', d => d === g);
-      // TODO: call whatever update/filter routine you already have
-      console.log('Selected group:', g);
-    }
+//     /** helper: mark selected item */
+//     function selectGroup(g){
+//       grpCont.selectAll('a').classed('selected', d => d === g);
+//       // TODO: call whatever update/filter routine you already have
+//       console.log('Selected group:', g);
+//     }
 
-    grpCont.selectAll('a')
-      .data(uniqueGroups)
-      .join('a')
-        .attr('href','#')
-        .text(d => d)
-        .on('click', (e,d) => {          // single-select click
-          e.preventDefault();
-          selectGroup(d);
-        });
-  })
-  .catch(err => console.error('Failed to load grouping CSV:', err));
+//     grpCont.selectAll('a')
+//       .data(uniqueGroups)
+//       .join('a')
+//         .attr('href','#')
+//         .text(d => d)
+//         .on('click', (e,d) => {          // single-select click
+//           e.preventDefault();
+//           selectGroup(d);
+//         });
+//   })
+//   .catch(err => console.error('Failed to load grouping CSV:', err));
 
 
 // 🔁  replace ALL copies of updateDataDisplay() with exactly ONE copy
@@ -779,6 +779,274 @@ function updateLegend(mode) {
   }
 }
 
+function drawEnrichedInstanceBar(fips) {
+  if (!has("#bar")) return;
+  const svg = d3.select("#bar").html(""),
+        W   = svg.node().clientWidth,
+        H   = svg.node().clientHeight;
+  const margin = { top: 40, right: 20, bottom: 60, left: 180 },
+        innerW = W - margin.left - margin.right,
+        innerH = H - margin.top - margin.bottom;
+
+  d3.csv("enriched_instance_necessity_scores.csv", d3.autoType)
+    .then(rows => {
+      // find row by FIPS (column CU)
+      const row = rows.find(r => String(r.FIPS).padStart(5, "0") === fips);
+      if (!row) {
+        svg.append("text")
+          .attr("x", W/2).attr("y", H/2)
+          .attr("text-anchor","middle")
+          .style("fill","darkred")
+          .text(`No data for FIPS ${fips}`);
+        return;
+      }
+      // grab all columns except FIPS
+      const allKeys   = Object.keys(row);
+      const fipsIndex = allKeys.indexOf("FIPS");
+      const featKeys  = allKeys.slice(1, fipsIndex);            // columns B…CT
+      const feats     = featKeys
+        .map(k => ({ feature: k, value: +row[k] }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 15);
+
+      // scales
+      const x = d3.scaleLinear()
+        .domain([0, d3.max(feats, d => d.value) || 1])
+        .range([margin.left, margin.left + innerW]);
+      const y = d3.scaleBand()
+        .domain(feats.map(d => d.feature))
+        .range([margin.top, margin.top + innerH])
+        .padding(0.1);
+
+      // axes
+      svg.append("g")
+        .attr("transform", `translate(0,${margin.top+innerH})`)
+        .call(d3.axisBottom(x).ticks(5).tickFormat(d3.format(".2f")));
+      svg.append("g")
+        .attr("transform", `translate(${margin.left},0)`)
+        .call(d3.axisLeft(y));
+
+      // title & labels
+      svg.append("text")
+        .attr("x", W/2).attr("y", margin.top/2)
+        .attr("text-anchor","middle").style("font-weight",600)
+        .text(`Top 15 Features for FIPS ${fips}`);
+      svg.append("text")
+        .attr("class","axis-label")
+        .attr("x", margin.left + innerW/2)
+        .attr("y", margin.top + innerH + 50)
+        .attr("text-anchor","middle")
+        .text("Value");
+      svg.append("text")
+        .attr("class","axis-label")
+        .attr("transform","rotate(-90)")
+        .attr("x", -(margin.top + innerH/2))
+        .attr("y", margin.left - 150)
+        .attr("text-anchor","middle")
+        .text("Feature");
+
+      // bars
+      svg.selectAll("rect")
+        .data(feats)
+        .join("rect")
+          .attr("x", margin.left)
+          .attr("y", d => y(d.feature))
+          .attr("width", d => x(d.value) - margin.left)
+          .attr("height", y.bandwidth())
+          .attr("fill", "#3182bd");
+    })
+    .catch(err => {
+      console.error(err);
+      svg.append("text")
+        .attr("x", W/2).attr("y", H/2)
+        .attr("text-anchor","middle")
+        .style("fill","darkred")
+        .text("Error loading enriched instance data");
+    });
+}
+
+function drawEnrichedGroupBar(fips) {
+  if (!has("#bar")) return;
+  const svg = d3.select("#bar").html(""),
+        W   = svg.node().clientWidth,
+        H   = svg.node().clientHeight;
+  const margin = { top: 40, right: 20, bottom: 60, left: 210 },
+        innerW = W - margin.left - margin.right,
+        innerH = H - margin.top - margin.bottom;
+
+  d3.csv("enriched_group_necessity_scores.csv", d3.autoType)
+    .then(rows => {
+      const row = rows.find(r => String(r.FIPS).padStart(5, "0") === fips);
+      if (!row) {
+        svg.append("text")
+          .attr("x", W/2).attr("y", H/2)
+          .attr("text-anchor","middle")
+          .style("fill","darkred")
+          .text(`No data for FIPS ${fips}`);
+        return;
+      }
+      // grab columns B–G (all except FIPS)
+      const allKeys   = Object.keys(row);
+  const fipsIndex = allKeys.indexOf("FIPS");
+  const groupKeys = allKeys.slice(1, fipsIndex);            // columns B…G
+  const groups    = groupKeys.map(k => ({ feature: k, value: +row[k] }));
+
+      const x = d3.scaleLinear()
+        .domain([0, d3.max(groups, d => d.value) || 1])
+        .range([margin.left, margin.left + innerW]);
+      const y = d3.scaleBand()
+        .domain(groups.map(d => d.feature))
+        .range([margin.top, margin.top + innerH])
+        .padding(0.2);
+
+      svg.append("g")
+        .attr("transform", `translate(0,${margin.top+innerH})`)
+        .call(d3.axisBottom(x).ticks(5).tickFormat(d3.format(".2f")));
+      svg.append("g")
+        .attr("transform", `translate(${margin.left},0)`)
+        .call(d3.axisLeft(y));
+
+      svg.append("text")
+        .attr("x", W/2).attr("y", margin.top/2)
+        .attr("text-anchor","middle").style("font-weight",600)
+        .text(`Feature-Group Scores for FIPS ${fips}`);
+      svg.append("text")
+        .attr("class","axis-label")
+        .attr("x", margin.left + innerW/2)
+        .attr("y", margin.top + innerH + 50)
+        .attr("text-anchor","middle")
+        .text("Value");
+
+      svg.selectAll("rect")
+        .data(groups)
+        .join("rect")
+          .attr("x", margin.left)
+          .attr("y", d => y(d.feature))
+          .attr("width", d => x(d.value) - margin.left)
+          .attr("height", y.bandwidth())
+          .attr("fill", "#3182bd");
+    })
+    .catch(err => {
+      console.error(err);
+      svg.append("text")
+        .attr("x", W/2).attr("y", H/2)
+        .attr("text-anchor","middle")
+        .style("fill","darkred")
+        .text("Error loading enriched group data");
+    });
+}
+function drawEnrichedSourceBar(fips) {
+  if (!has("#bar")) return;
+  const svg = d3.select("#bar").html(""),
+        W   = svg.node().clientWidth,
+        H   = svg.node().clientHeight;
+  const margin = { top: 40, right: 20, bottom: 60, left: 130 },
+        innerW = W - margin.left - margin.right,
+        innerH = H - margin.top  - margin.bottom;
+
+  d3.csv("enriched_source_necessity_scores.csv", d3.autoType)
+    .then(rows => {
+      // find the row for this county
+      const row = rows.find(r => String(r.FIPS).padStart(5, "0") === fips);
+      if (!row) {
+        svg.append("text")
+           .attr("x", W/2).attr("y", H/2)
+           .attr("text-anchor","middle")
+           .style("fill","darkred")
+           .text(`No source data for FIPS ${fips}`);
+        return;
+      }
+
+      // slice columns B…(just before "FIPS")
+      const allKeys   = Object.keys(row);
+      const fipsIndex = allKeys.indexOf("FIPS");
+      const srcKeys   = allKeys.slice(1, fipsIndex);    // B… before FIPS
+
+      const sources = srcKeys.map(k => ({
+        label: k,
+        value: +row[k]
+      }));
+
+      // scales
+      const x = d3.scaleLinear()
+        .domain([0, d3.max(sources, d => d.value) || 1])
+        .range([margin.left, margin.left + innerW]);
+      const y = d3.scaleBand()
+        .domain(sources.map(d => d.label))
+        .range([margin.top, margin.top + innerH])
+        .padding(0.2);
+
+      // axes
+      svg.append("g")
+         .attr("transform", `translate(0,${margin.top + innerH})`)
+         .call(d3.axisBottom(x).ticks(5).tickFormat(d3.format(".2f")));
+      svg.append("g")
+         .attr("transform", `translate(${margin.left},0)`)
+         .call(d3.axisLeft(y));
+
+      // title & axis labels
+      svg.append("text")
+         .attr("x", W/2).attr("y", margin.top/2)
+         .attr("text-anchor","middle").style("font-weight",600)
+         .text(`Source Necessity for FIPS ${fips}`);
+      svg.append("text")
+         .attr("class","axis-label")
+         .attr("x", margin.left + innerW/2)
+         .attr("y", margin.top + innerH + 50)
+         .attr("text-anchor","middle")
+         .text("Score");
+      
+      // draw bars
+      svg.selectAll("rect")
+         .data(sources)
+         .join("rect")
+           .attr("x", margin.left)
+           .attr("y", d => y(d.label))
+           .attr("width", d => x(d.value) - margin.left)
+           .attr("height", y.bandwidth())
+           .attr("fill", "#3182bd")
+         .on("mouseover", (e, d) => {
+           tooltip.style("opacity", 0.9)
+                  .html(`<strong>${d.label}</strong><br>${d3.format(".2f")(d.value)}`)
+                  .style("left", (e.pageX + 8) + "px")
+                  .style("top",  (e.pageY - 28) + "px");
+         })
+         .on("mouseout", () => tooltip.style("opacity", 0));
+    })
+    .catch(err => {
+      console.error(err);
+      svg.append("text")
+         .attr("x", W/2).attr("y", H/2)
+         .attr("text-anchor","middle")
+         .style("fill","darkred")
+         .text("Error loading source data");
+    });
+}
+
+// Wire up the Sources button:
+d3.select("#source-btn").on("click", () => {
+  if (selectedFips) drawEnrichedSourceBar(selectedFips);
+  else alert("Please click a county first");
+});
+
+
+
+
+
+// wire them up & default on map-click:
+d3.select("#feature-btn").on("click", () => {
+  if (selectedFips) drawEnrichedInstanceBar(selectedFips);
+  else alert("Please click a county first");
+});
+d3.select("#group-btn").on("click", () => {
+  if (selectedFips) drawEnrichedGroupBar(selectedFips);
+  else alert("Please click a county first");
+});
+
+// then, in your drawMap’s click handler, replace:
+    if (has("#bar"))           drawFeatureBar(fips);
+// with:
+    if (has("#bar"))           drawEnrichedInstanceBar(fips);
 
 function drawMapNRI() {
   const svg = d3.select("#map"),
