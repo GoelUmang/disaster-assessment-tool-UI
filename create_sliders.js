@@ -331,6 +331,7 @@ function createSlider1(columnName) {
 // Updated function for news sliders - uses actual column names
 function createSlider2(columnName) {
     // Convert column name to a more readable format
+    // example: News_Power Lines --> news_power_lines
     const displayName = columnName.replace('News_', '').toLowerCase().replace(' ', '_');
     const sliderName = `news_${displayName}`;
     
@@ -347,6 +348,7 @@ function createSlider2(columnName) {
 // Updated function for reddit sliders - uses actual column names
 function createSlider3(columnName) {
     // Convert column name to a more readable format
+    // example: Reddit_Power Lines --> reddit_power_lines
     const displayName = columnName.replace('Reddit_', '').toLowerCase().replace(' ', '_');
     const sliderName = `reddit_${displayName}`;
     
@@ -463,7 +465,7 @@ function addSliderListeners(feature_cat) {
             // 2) record the intervention
       const col = this.getAttribute('data-column') || this.getAttribute('data-label');
       window.interv_dict[col] = parseFloat(this.value);
-      console.log('interv_dict →', window.interv_dict);
+    //   console.log('interv_dict →', window.interv_dict);
         });
     });
 }

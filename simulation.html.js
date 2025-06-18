@@ -416,7 +416,7 @@ document.addEventListener('DOMContentLoaded', function() {
           };
           console.log('🛰️ About to POST payload:', payload);
           
-          fetch('http://10.155.200.7:8000/simulate', {
+          fetch('http://10.182.75.231:5000/simulate', {
             method:  'POST',
             headers: {'Content-Type':'application/json'},
             body:    JSON.stringify(payload)

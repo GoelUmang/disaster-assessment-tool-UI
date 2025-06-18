@@ -222,20 +222,26 @@ function updateSlidersForFips(fipsCode) {
   console.log(`Updating sliders for FIPS: ${fipsCode}`);
   
     // Update News sliders
-    const newsColumns = ['news_trees', 'news_power_lines', 'news_roofs', 'news_buildings', 'news_vehicles', 'news_agriculture', 'news_infrastructure'];
-    newsColumns.forEach(column => {
-        const value = data[column];
+    // const newsColumns = ['news_trees', 'news_power_lines', 'news_roofs', 'news_buildings', 'news_vehicles', 'news_agriculture', 'news_infrastructure'];
+    newsColumns.forEach(columnName => {
+        const value = data[columnName];
+        const displayName = columnName.replace('News_', '').toLowerCase().replace(' ', '_');
+        const sliderName = `news_${displayName}`;
+        // console.log("Updating News sliders with values: " + value);
         if (value !== undefined && value !== null) {
-            updateSlider(column, value);
+          updateSlider(sliderName, value);
         }
-    });
-  
-    // Update Reddit sliders
-    const redditColumns = ['reddit_trees', 'reddit_power_lines', 'reddit_roofs', 'reddit_buildings', 'reddit_vehicles', 'reddit_agriculture', 'reddit_infrastructure'];
-    redditColumns.forEach(column => {
-        const value = data[column];
+      });
+      
+      // Update Reddit sliders
+      // const redditColumns = ['reddit_trees', 'reddit_power_lines', 'reddit_roofs', 'reddit_buildings', 'reddit_vehicles', 'reddit_agriculture', 'reddit_infrastructure'];
+      redditColumns.forEach(columnName => {
+        const value = data[columnName];
+        const displayName = columnName.replace('Reddit_', '').toLowerCase().replace(' ', '_');
+        const sliderName = `reddit_${displayName}`;
+        // console.log("Updating Reddit sliders with values: " + value);
         if (value !== undefined && value !== null) {
-            updateSlider(column, value);
+            updateSlider(sliderName, value);
         }
     });
 
