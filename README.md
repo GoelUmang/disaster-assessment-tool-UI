@@ -94,7 +94,7 @@ pip install -r requirements.txt
 ### 3. Run the Flask app
 
 ```bash
-python app.py
+python generate_counterfactuals.py
 ```
 
 Visit `http://127.0.0.1:5000` in your browser.
@@ -114,13 +114,13 @@ Visit `http://127.0.0.1:5000` in your browser.
 ## Repo Structure
 
 ```
-├── data/                  # Processed disaster data and feature sets
-├── models/                # Trained MLPs and SCM modules
-├── static/                # D3.js scripts and visual assets
-├── templates/             # HTML templates for the web UI
-├── utils/                 # Helpers for SCM inference, counterfactuals, attribution
-├── app.py                 # Flask application entry point
-└── requirements.txt       # Python dependencies
+├── data/                       # Processed disaster data and feature sets
+├── models/                     # Trained MLPs and SCM modules
+├── static/                     # D3.js scripts and visual assets
+├── templates/                  # HTML templates for the web UI
+├── utils/                      # Helpers for SCM inference, counterfactuals, attribution
+├── generate_counterfactuals.py # Flask application entry point
+└── requirements.txt            # Python dependencies
 ```
 
 
