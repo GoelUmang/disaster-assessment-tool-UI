@@ -10,3 +10,4 @@ old.*
 py310_venv
 check_fips.py
 data_cleaning.py
+.DS_Store

@@ -1,3 +1,12 @@
+# File name: generate_counterfactuals.py
+# File description: runs model with dict as inputs
+
+# TODO: convert this to a Flask Backend API
+
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import logging
+import traceback
 import os
 import json
 import joblib
@@ -8,10 +17,10 @@ from sklearn.metrics import accuracy_score, f1_score
 from sklearn.preprocessing import LabelEncoder, RobustScaler
 
 # ------------------ CONFIG ------------------ #
-DATA_PATH = "../data/data_features.csv"
-GROUPINGS_PATH = "../assets/groupings/feature_groupings.csv"
-DAG_PATH = "../assets/dags/dag_structures.json"
-OUTPUT_BASE = "../assets/full_features_v6"
+DATA_PATH = "./data_features.csv"
+GROUPINGS_PATH = "./models/disaster-assessment-tool/assets/groupings/feature_groupings.csv"
+DAG_PATH = "./models/disaster-assessment-tool/assets/dags/dag_structures.json"
+OUTPUT_BASE = "./models/disaster-assessment-tool/assets/full_features_v6"
 TARGET_COL = "Property_Damage_GT"
 
 # ------------------ DAG HELPERS ------------------ #
@@ -165,12 +174,194 @@ def run_scm_counterfactual_simulation(original_sample, interventions_raw, dag_ke
 
     return counterfactual_label, original_label
 
-# ------------------ USAGE EXAMPLE ------------------ #
+# ------------------ FLASK BACKEND API ------------------ #
+app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Simple health check endpoint"""
+    return jsonify({'status': 'healthy', 'message': 'API is running'})
+
+@app.route('/simulate', methods=['POST'])
+def run_simulation():
+    
+    """
+    Main endpoint for running SCM counterfactual simulations
+    
+    Expected JSON payload:
+    {
+        "original_dict": {...},  # Original data dictionary
+        "interventions_dict_dict": {...},  # interventions_dict dictionary
+        "dag_key": dag_key # dag key set
+    }
+    """
+    try:
+        # payload = request.get_json()
+        # print("📥 Backend got:", payload)
+        # return jsonify(payload)  # echo it back
+        # Parse JSON request
+        if not request.is_json:
+            return jsonify({'error': 'Content-Type must be application/json'}), 400
+        
+        data = request.get_json()
+        
+        # Validate required fields
+        if 'original_dict' not in data:
+            return jsonify({'error': 'Missing required field: original_dict'}), 400
+        
+        if 'interventions_dict' not in data:
+            return jsonify({'error': 'Missing required field: interventions_dict'}), 400
+        
+        # Extract parameters
+        original_dict = data['original_dict']
+        interventions_dict = data['interventions_dict']
+        dag_key = data.get('dag_key', 'DAG_1_Independent')
+        
+        # Validate dag_key
+        valid_dag_keys = [
+            'DAG_1_Independent',
+            'DAG_2_Infrastructure_Mediator', 
+            'DAG_3_Flood_Driven'
+        ]
+        if dag_key not in valid_dag_keys:
+            return jsonify({
+                'error': f'Invalid dag_key. Must be one of: {valid_dag_keys}'
+            }), 400
+        
+        logger.info(f"Running simulation with dag_key: {dag_key}")
+        
+        # Run your simulation function
+        counterfactual_label, original_label = run_scm_counterfactual_simulation(
+            original_sample=original_dict,
+            interventions_raw=interventions_dict,
+            dag_key=dag_key
+        )
+        
+        # Return results
+        response = {
+            'success': True,
+            'results': {
+                'counterfactual_label': counterfactual_label,
+                'original_label': original_label,
+                'dag_key_used': dag_key
+            }
+        }
+        
+        logger.info("Simulation completed successfully")
+        return jsonify(response)
+        
+    except KeyError as e:
+        logger.error(f"Missing key in input data: {e}")
+        return jsonify({'error': f'Missing required key: {str(e)}'}), 400
+    
+    except ValueError as e:
+        logger.error(f"Invalid input data: {e}")
+        return jsonify({'error': f'Invalid input data: {str(e)}'}), 400
+    
+    except Exception as e:
+        logger.error(f"Simulation failed: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            'error': 'Internal server error during simulation',
+            'message': str(e)
+        }), 500
+
+@app.route('/simulate/batch', methods=['POST'])
+def run_batch_simulation():
+    """
+    Endpoint for running multiple simulations in batch
+    
+    Expected JSON payload:
+    {
+        "simulations": [
+            {
+                "original_dict": {...},
+                "interventions_dict": {...},
+                "dag_key": "DAG_2_Infrastructure_Mediator"
+            },
+            ...
+        ]
+    }
+    """
+    try:
+        if not request.is_json:
+            return jsonify({'error': 'Content-Type must be application/json'}), 400
+        
+        data = request.get_json()
+        
+        if 'simulations' not in data:
+            return jsonify({'error': 'Missing required field: simulations'}), 400
+        
+        simulations = data['simulations']
+        
+        if not isinstance(simulations, list):
+            return jsonify({'error': 'simulations must be a list'}), 400
+        
+        results = []
+        
+        for i, sim in enumerate(simulations):
+            try:
+                original_dict = sim['original_dict']
+                interventions_dict = sim['interventions_dict']
+                dag_key = sim.get('dag_key', 'DAG_1_Independent')
+                
+                counterfactual_label, original_label = run_scm_counterfactual_simulation(
+                    original_sample=original_dict,
+                    interventions_raw=interventions_dict,
+                    dag_key=dag_key
+                )
+                
+                results.append({
+                    'index': i,
+                    'success': True,
+                    'counterfactual_label': counterfactual_label,
+                    'original_label': original_label,
+                    'dag_key_used': dag_key
+                })
+                
+            except Exception as e:
+                results.append({
+                    'index': i,
+                    'success': False,
+                    'error': str(e)
+                })
+        
+        return jsonify({
+            'success': True,
+            'results': results,
+            'total_simulations': len(simulations)
+        })
+        
+    except Exception as e:
+        logger.error(f"Batch simulation failed: {str(e)}")
+        return jsonify({
+            'error': 'Internal server error during batch simulation',
+            'message': str(e)
+        }), 500
+
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({'error': 'Endpoint not found'}), 404
+
+@app.errorhandler(405)
+def method_not_allowed(error):
+    return jsonify({'error': 'Method not allowed'}), 405
+
+# ------------------ MAIN RUN ------------------ #
 if __name__ == "__main__":
+    # Development server
+    app.run(debug=True, host='0.0.0.0', port=5000)
+
+    # ------------------ USAGE EXAMPLE ------------------ #
     df = pd.read_csv(DATA_PATH, dtype={"FIPS": str})
     groupings = pd.read_csv(GROUPINGS_PATH)
     transition_cols = [c for c in df.columns if c.startswith("transition_")]
-    df[transition_cols] = df[transition_cols].div(df["county_area_m2"].replace(0, np.nan), axis=0)
+    df[transition_cols] = df[transition_cols].div(df["county_area_m2"].replace(0, np.nan), axis=0) # refer to this
     df = df.fillna(0)
 
     valid_feats = set(groupings["Feature"])
@@ -183,16 +374,18 @@ if __name__ == "__main__":
     original = input_test.iloc[[10]].copy()
 
     #-----
-    
-    sample_dict = original.iloc[0].to_dict()
-    interventions = {
+    # example:
+    original_dict = original.iloc[0].to_dict()
+    interventions_dict = {
         "transition_6_0": 10,
         "transition_3_6": 10
-    }
-
+    }   
+    # run this
     run_scm_counterfactual_simulation(
-        original_sample=sample_dict,
-        interventions_raw=interventions,
+        original_sample=original_dict, # transition cols should be div by county_area_m2
+        interventions_raw=interventions_dict,
         dag_key="DAG_2_Infrastructure_Mediator"
         # dag_key="DAG_1_Independent"
+        # dag_key="DAG_3_Flood_Driven"
     )
+    # returns counterfactual_label, original_label

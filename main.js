@@ -1,9 +1,8 @@
-// main.js
+// File name: main.js
+// File description: script for chloropeth map etc
+// 
 
-// returns true if the selector exists on the current page
-function has(sel) {
-  return document.querySelector(sel) !== null;
-}
+// Variable decl and init
 
 let allData, countiesTopo;
 let recourseData = [];          
@@ -13,6 +12,12 @@ let selectedFips = null;
 let fipsToIdxMap = new Map();
 
 const tooltip = d3.select("#tip");
+
+// returns true if the selector exists on the current page
+function has(sel) {
+  return document.querySelector(sel) !== null;
+}
+
 // ────────────────────────────────────────────────────────────────────────────────
 // 1) LOAD data_features.csv + COUNTY TOPOJSON (no year filters anymore)
 Promise.all([
@@ -118,6 +123,11 @@ const pathGen = d3.geoPath().projection(proj);
       .on("click", (e, d) => {
         const fips = String(d.id).padStart(5, "0");
         selectedFips = fips;
+
+        // FIPS value changed -> event for global
+        document.dispatchEvent(new CustomEvent('fipsChanged', { 
+          detail: { fips: selectedFips } 
+        }));
 
         // Add this part to update the selected county text
         const row = recourseData.find(r => String(r.FIPS).padStart(5,"0") === fips);
@@ -1170,3 +1180,5 @@ document.addEventListener("change", e => {
 // 3) And keep your resize handler
 window.addEventListener("resize", drawAll);
 
+// Global declarations and initializations
+window.selectedFips = selectedFips;
