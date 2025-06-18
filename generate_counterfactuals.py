@@ -189,6 +189,7 @@ def health_check():
 
 @app.route('/simulate', methods=['POST'])
 def run_simulation():
+    
     """
     Main endpoint for running SCM counterfactual simulations
     
@@ -200,6 +201,9 @@ def run_simulation():
     }
     """
     try:
+        # payload = request.get_json()
+        # print("📥 Backend got:", payload)
+        # return jsonify(payload)  # echo it back
         # Parse JSON request
         if not request.is_json:
             return jsonify({'error': 'Content-Type must be application/json'}), 400
@@ -351,7 +355,7 @@ def method_not_allowed(error):
 # ------------------ MAIN RUN ------------------ #
 if __name__ == "__main__":
     # Development server
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=8000)
 
     # ------------------ USAGE EXAMPLE ------------------ #
     df = pd.read_csv(DATA_PATH, dtype={"FIPS": str})

@@ -392,7 +392,10 @@ document.addEventListener('fipsChanged', function(event) {
   if (newFips !== null && newFips !== undefined) {
     console.log(`FIPS changed via custom event: ${newFips}`);
     updateSlidersForFips(newFips);
-    // console.log(findDataForFips(newFips));
+    window.original_dict = extractDataByFIPS(newFips);
+    // reset interventions for this county
+    window.interv_dict = {};
+    
 
     // Assign original dictionary with the function output
     original_dict = extractDataByFIPS(newFips);
@@ -406,6 +409,8 @@ document.addEventListener('fipsChanged', function(event) {
     // console.log(original_dict);
     window.original_dict = original_dict;
     window.interv_dict = interv_dict;
+    console.log('Original sample:', window.original_dict);
+    console.log('Reset interventions:', window.interv_dict);
     
   } else {
     console.log('FIPS set to null via custom event - no sliders updated');

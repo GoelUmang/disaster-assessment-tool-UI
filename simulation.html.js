@@ -408,28 +408,33 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!original_dict || !interv_dict) {
             console.warn("Original dict and intervention dict not defined!")
         }
-        // call backend
-        fetch('http://127.0.0.1:5000/simulate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            original_dict: original_dict,  // adjust if sample has more fields
-            interventions_dict: interv_dict,
-            dag_key: dagKey
-        })
-        })
+        // === STEP 4: POST BOTH DICTS TO YOUR PYTHON ===
+        const payload = {
+            original_dict:      window.original_dict,
+            interventions_dict: window.interv_dict,
+            dag_key:            dagKey
+          };
+          console.log('🛰️ About to POST payload:', payload);
+          
+          fetch('http://10.155.200.7:8000/simulate', {
+            method:  'POST',
+            headers: {'Content-Type':'application/json'},
+            body:    JSON.stringify(payload)
+          })
+          // …
+          
         .then(r => r.json())
         .then(({ results }) => {
-            const { original_label, counterfactual_label } = results;
-            document.getElementById('value').textContent =
-                `Original Prediction: ${original_label}`;
-            document.getElementById('resValue').textContent =
-                `Counterfactual Prediction: ${counterfactual_label}`;
+          document.getElementById('value').textContent    =
+            `Original Prediction: ${results.original_label}`;
+          document.getElementById('resValue').textContent =
+            `Counterfactual Prediction: ${results.counterfactual_label}`;
         })
         .catch(err => {
-            console.error(err);
-            alert("Error computing counterfactual. See console for details.");
+          console.error(err);
+         alert("Error computing counterfactual. See console for details.");
         });
+    
     });
 
 });
