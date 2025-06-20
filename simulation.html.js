@@ -193,9 +193,10 @@ function updateSnapshot(json_package) {
 
 // Event call when slider changed
 function sliderChanged (data) {
-
+    // updates #value - tempo
     const value_para = document.getElementById('value');
-    value_para.textContent = "" + data.label + ": " + data.value;
+    // value_para.textContent = "" + data.label + ": " + data.value;
+    alert("" + data.label + ": " + data.value);
 }
 
 // Send slider data to backend
@@ -261,7 +262,7 @@ function sendSliderData(label, value) {
     // document.dispatchEvent(new CustomEvent('sliderChanged', {
     //     detail: data
     // }));
-    sliderChanged(data);
+    // sliderChanged(data);
 }
 
 // optional, use if needed (for transitional_)
