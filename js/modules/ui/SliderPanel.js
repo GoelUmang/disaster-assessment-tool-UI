@@ -89,7 +89,9 @@ function generateAllSliders() {
                 sliderInput.dataset.column = columnName; // Store original column name
 
                 // Attach the event listener for this specific slider
-                sliderInput.addEventListener('input', handleSliderInput);
+                sliderInput.addEventListener('input', handleSliderVisualUpdate); // For instant visual feedback
+                sliderInput.addEventListener('change', handleSliderStateUpdate);  // For the final state update
+
 
                 container.appendChild(sliderClone);
             });
