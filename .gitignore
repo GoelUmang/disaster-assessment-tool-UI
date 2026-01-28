@@ -1,4 +1,6 @@
 merged_file_unique.csv
+feature_groupings.csv
+importance_scores_*
 
 .DS_Store
 
@@ -7,7 +9,7 @@ old*
 
 # venv
 .venv
-py310_venv
+*venv
 check_fips.py
 data_cleaning.py
 .DS_Store
