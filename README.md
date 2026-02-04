@@ -140,7 +140,7 @@ Then, go to your localhost's port via a web browser.
 ## Backend Modeling & Dataset Preparation
 
 Github Link: [https://github.com/sak-18/disaster-assessment-tool](https://github.com/sak-18/disaster-assessment-tool)
-
+Google Drive Link: for `full-features`, download the folder [here](https://drive.google.com/drive/folders/1MESbW2dam2hG1t313UjDsBsE3sU1S3Vu?usp=sharing)
 
 ## Contact
 
@@ -149,4 +149,3 @@ For questions or feedback, reach out to [svishnu6@asu.edu](mailto:svishnu6@asu.e
 ---
 
 Let me know if you'd like this README saved to a file or updated to reflect specific implementation details from your GitHub repo.
-

@@ -19,7 +19,7 @@ from sklearn.preprocessing import LabelEncoder, RobustScaler
 DATA_PATH = "./data_features.csv"
 GROUPINGS_PATH = "./models/disaster-assessment-tool/assets/groupings/feature_groupings.csv"
 DAG_PATH = "./models/disaster-assessment-tool/assets/dags/dag_structures.json"
-OUTPUT_BASE = "./models/disaster-assessment-tool/assets/full_features_v6"
+OUTPUT_BASE = "./models/disaster-assessment-tool/assets/full_features"
 TARGET_COL = "Property_Damage_GT"
 
 # ------------------ DAG HELPERS ------------------ #
@@ -354,8 +354,8 @@ def method_not_allowed(error):
 # ------------------ MAIN RUN ------------------ #
 if __name__ == "__main__":
     # Development server
-    app.run(debug=True, host='0.0.0.0', port=5000)
-
+    app.run(debug=False, host='0.0.0.0', port=5000)
+    # ALWAYS put false
     # ------------------ USAGE EXAMPLE ------------------ #
     df = pd.read_csv(DATA_PATH, dtype={"FIPS": str})
     groupings = pd.read_csv(GROUPINGS_PATH)
