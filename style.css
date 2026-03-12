@@ -339,6 +339,7 @@ select {
   background: #e2e8f0;
   outline: none;
   -webkit-appearance: none;
+  appearance: none;
   cursor: pointer;
 }
 .slider::-webkit-slider-thumb {
@@ -453,6 +454,10 @@ select {
 .grid-section-button{
   padding: 5px;
 }
+.grid-section-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 
 .toggle-section {
   display: flex;
@@ -505,6 +510,10 @@ select {
   max-height: 300px; /* might need to change... */
   display: block;
   /* margin: 0 auto 5px; */
+}
+.dag-node.selected {
+  border: 2px solid var(--accent, #2563eb);
+  background-color: #eff6ff;
 }
 
 /* ------- charts ------- */
@@ -564,6 +573,35 @@ svg [tabindex="0"]:focus{
   white-space:nowrap;
   opacity:0;
   transition:opacity .12s;
+}
+
+/* ------- toast ------- */
+#toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  color: #000;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+#toast.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.toast-loader {
+  height: 1.2rem;
+  width: 1.2rem;
 }
 
 /* ------- modal ------- */

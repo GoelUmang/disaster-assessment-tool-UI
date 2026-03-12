@@ -80,7 +80,7 @@
         <div class="grid-section">
           <h3>Feature Intervention Configuration</h3>
           <!-- opens up pop-up with all features' sliding bar and categorized -->
-          <button class="grid-section-button" data-modal="feature-modal">
+          <button class="grid-section-button" data-modal="feature-modal" id="feature-modal-btn" disabled>
             <h3>Open pop-up menu</h3>
           </button>
 
@@ -96,13 +96,13 @@
 
         <div class="grid-section">
           <h3>Feature Intervention Configuration Snapshot</h3>
-          <button class="grid-section-button" data-modal="snapshot-modal">
+          <button class="grid-section-button" data-modal="snapshot-modal" id="snapshot-modal-btn" disabled>
             <h3>Open pop-up menu</h3>
           </button>
           
         </div>
         <div class="grid-section" style="height: 100%;">
-          <button id="compute_result_button" class="grid-section-button">
+          <button id="compute_result_button" class="grid-section-button" disabled>
             <h2>Compute Result</h2>
           </button>
         </div>
@@ -202,6 +202,7 @@
   </main>
   
   <div id="tip" class="tooltip"></div>
+  <div id="toast"></div>
 
   <template id="slider-template">
     <div class="slider-container">
