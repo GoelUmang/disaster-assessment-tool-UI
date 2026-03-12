@@ -98,15 +98,16 @@ function render() {
  * @param {string} fips - The selected FIPS code.
  */
 function drawEnrichedInstanceBar(svg, fips) {
-    const W = svg.node().clientWidth, H = svg.node().clientHeight;
-    const margin = { top: 40, right: 20, bottom: 60, left: 180 };
-    const innerW = W - margin.left - margin.right;
-    const innerH = H - margin.top - margin.bottom;
-
-    const data = getInstanceNecessityData(); // Assumes DataManager provides this
+    const data = getInstanceNecessityData();
     const row = data.find(r => String(r.FIPS).padStart(5, "0") === fips);
 
+    const margin = { top: 40, right: 40, bottom: 80, left: 180 };
+    const BAR_H = 28;
+    const W = Math.max(svg.node().parentElement.clientWidth || 0, 480);
+
     if (!row) {
+        const H = 200;
+        svg.attr("width", W).attr("height", H);
         svg.append("text").attr("x", W/2).attr("y", H/2).attr("text-anchor","middle").style("fill","darkred").text(`No instance data for FIPS ${fips}`);
         return;
     }
@@ -117,14 +118,21 @@ function drawEnrichedInstanceBar(svg, fips) {
         .sort((a, b) => b.value - a.value)
         .slice(0, 15);
 
+    const H = margin.top + margin.bottom + feats.length * BAR_H;
+    svg.attr("width", W).attr("height", H);
+
+    const innerW = W - margin.left - margin.right;
+    const innerH = H - margin.top - margin.bottom;
+
     const x = d3.scaleLinear().domain([0, d3.max(feats, d => d.value) || 1]).range([margin.left, margin.left + innerW]);
     const y = d3.scaleBand().domain(feats.map(d => d.feature)).range([margin.top, margin.top + innerH]).padding(0.1);
 
-    svg.append("g").attr("transform", `translate(0,${margin.top+innerH})`).call(d3.axisBottom(x).ticks(5).tickFormat(d3.format(".2f")));
+    svg.append("g").attr("transform", `translate(0,${margin.top+innerH})`).call(d3.axisBottom(x).ticks(5).tickFormat(d3.format(".2f")))
+        .selectAll("text").attr("transform", "rotate(-40)").style("text-anchor", "end").attr("dx", "-.5em").attr("dy", ".5em");
     svg.append("g").attr("transform", `translate(${margin.left},0)`).call(d3.axisLeft(y));
 
     svg.append("text").attr("x", W/2).attr("y", margin.top/2).attr("text-anchor","middle").style("font-weight",600).text(`Top 15 Features for FIPS ${fips}`);
-    
+
     svg.selectAll("rect").data(feats).join("rect")
         .attr("x", margin.left)
         .attr("y", d => y(d.feature))
@@ -139,25 +147,33 @@ function drawEnrichedInstanceBar(svg, fips) {
  * @param {string} fips - The selected FIPS code.
  */
 function drawEnrichedGroupBar(svg, fips) {
-    const W = svg.node().clientWidth, H = svg.node().clientHeight;
-    const margin = { top: 40, right: 20, bottom: 60, left: 210 };
-    const innerW = W - margin.left - margin.right;
-    const innerH = H - margin.top - margin.bottom;
-
     const data = getGroupNecessityData();
     const row = data.find(r => String(r.FIPS).padStart(5, "0") === fips);
 
+    const margin = { top: 40, right: 40, bottom: 80, left: 210 };
+    const BAR_H = 30;
+    const W = Math.max(svg.node().parentElement.clientWidth || 0, 480);
+
     if (!row) {
+        const H = 200;
+        svg.attr("width", W).attr("height", H);
         svg.append("text").attr("x", W/2).attr("y", H/2).attr("text-anchor","middle").style("fill","darkred").text(`No group data for FIPS ${fips}`);
         return;
     }
 
     const groups = Object.keys(row).filter(k => k !== 'FIPS').map(k => ({ feature: k, value: +row[k] }));
-    
+
+    const H = margin.top + margin.bottom + groups.length * BAR_H;
+    svg.attr("width", W).attr("height", H);
+
+    const innerW = W - margin.left - margin.right;
+    const innerH = H - margin.top - margin.bottom;
+
     const x = d3.scaleLinear().domain([0, d3.max(groups, d => d.value) || 1]).range([margin.left, margin.left + innerW]);
     const y = d3.scaleBand().domain(groups.map(d => d.feature)).range([margin.top, margin.top + innerH]).padding(0.2);
 
-    svg.append("g").attr("transform", `translate(0,${margin.top+innerH})`).call(d3.axisBottom(x).ticks(5).tickFormat(d3.format(".2f")));
+    svg.append("g").attr("transform", `translate(0,${margin.top+innerH})`).call(d3.axisBottom(x).ticks(5).tickFormat(d3.format(".2f")))
+        .selectAll("text").attr("transform", "rotate(-40)").style("text-anchor", "end").attr("dx", "-.5em").attr("dy", ".5em");
     svg.append("g").attr("transform", `translate(${margin.left},0)`).call(d3.axisLeft(y));
 
     svg.append("text").attr("x", W/2).attr("y", margin.top/2).attr("text-anchor","middle").style("font-weight",600).text(`Feature-Group Scores for FIPS ${fips}`);
@@ -176,25 +192,33 @@ function drawEnrichedGroupBar(svg, fips) {
  * @param {string} fips - The selected FIPS code.
  */
 function drawEnrichedSourceBar(svg, fips) {
-    const W = svg.node().clientWidth, H = svg.node().clientHeight;
-    const margin = { top: 40, right: 20, bottom: 60, left: 130 };
-    const innerW = W - margin.left - margin.right;
-    const innerH = H - margin.top - margin.bottom;
-
     const data = getSourceNecessityData();
     const row = data.find(r => String(r.FIPS).padStart(5, "0") === fips);
-    
+
+    const margin = { top: 40, right: 40, bottom: 80, left: 130 };
+    const BAR_H = 30;
+    const W = Math.max(svg.node().parentElement.clientWidth || 0, 480);
+
     if (!row) {
+        const H = 200;
+        svg.attr("width", W).attr("height", H);
         svg.append("text").attr("x", W/2).attr("y", H/2).attr("text-anchor","middle").style("fill","darkred").text(`No source data for FIPS ${fips}`);
         return;
     }
 
     const sources = Object.keys(row).filter(k => k !== 'FIPS').map(k => ({ label: k, value: +row[k] }));
 
+    const H = margin.top + margin.bottom + sources.length * BAR_H;
+    svg.attr("width", W).attr("height", H);
+
+    const innerW = W - margin.left - margin.right;
+    const innerH = H - margin.top - margin.bottom;
+
     const x = d3.scaleLinear().domain([0, d3.max(sources, d => d.value) || 1]).range([margin.left, margin.left + innerW]);
     const y = d3.scaleBand().domain(sources.map(d => d.label)).range([margin.top, margin.top + innerH]).padding(0.2);
 
-    svg.append("g").attr("transform", `translate(0,${margin.top + innerH})`).call(d3.axisBottom(x).ticks(5).tickFormat(d3.format(".2f")));
+    svg.append("g").attr("transform", `translate(0,${margin.top + innerH})`).call(d3.axisBottom(x).ticks(5).tickFormat(d3.format(".2f")))
+        .selectAll("text").attr("transform", "rotate(-40)").style("text-anchor", "end").attr("dx", "-.5em").attr("dy", ".5em");
     svg.append("g").attr("transform", `translate(${margin.left},0)`).call(d3.axisLeft(y));
 
     svg.append("text").attr("x", W/2).attr("y", margin.top/2).attr("text-anchor","middle").style("font-weight",600).text(`Source Necessity for FIPS ${fips}`);

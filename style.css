@@ -841,9 +841,20 @@ header .controls{
   display: block;
 }
 
-/* 4) Bar chart expands to fill remainder */
-#bar {
+/* 4) Bar chart wrapper scrolls; SVG grows to fit content */
+#bar-wrapper {
   flex: 1;
+  min-height: 200px;
+  overflow: auto;
+  background: rgba(255,255,255,0.95);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+#bar {
+  display: block;
+  min-width: 480px;
+  width: 100%;
 }
 
 /* ensure charts fill their grid cells */
