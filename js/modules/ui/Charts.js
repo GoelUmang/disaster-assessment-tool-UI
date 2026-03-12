@@ -18,7 +18,8 @@ import {
     getGroupNecessityData,
     getSourceNecessityData,
     getRecourseData,
-    getFipsToInstanceMap
+    getFipsToInstanceMap,
+    getDataForFips
 } from '../services/DataManager.js';
 
 // --- Module State ---
@@ -66,27 +67,23 @@ function render() {
     if (!appState.selectedFips) return;
 
     const fips = appState.selectedFips;
-    const chartContainer = d3.select("#bar");
 
-    // Clear previous chart
-    chartContainer.html("");
-
-    switch (activeChartType) {
-        case 'instance':
-            drawEnrichedInstanceBar(chartContainer, fips);
-            break;
-        case 'group':
-            drawEnrichedGroupBar(chartContainer, fips);
-            break;
-        case 'source':
-            drawEnrichedSourceBar(chartContainer, fips);
-            break;
-        default:
-            console.warn(`Unknown chart type: ${activeChartType}`);
+    // Bar charts — index.html only
+    const barEl = document.getElementById('bar');
+    if (barEl) {
+        const chartContainer = d3.select(barEl);
+        chartContainer.html("");
+        switch (activeChartType) {
+            case 'instance': drawEnrichedInstanceBar(chartContainer, fips); break;
+            case 'group':    drawEnrichedGroupBar(chartContainer, fips);    break;
+            case 'source':   drawEnrichedSourceBar(chartContainer, fips);   break;
+            default: console.warn(`Unknown chart type: ${activeChartType}`);
+        }
     }
-    
-    // Always attempt to draw the lollipop chart in its own container
-    drawLollipopChart(d3.select("#chart"), fips);
+
+    // Lollipop chart — algorithmic_recourse.html only
+    const chartEl = document.getElementById('chart');
+    if (chartEl) drawLollipopChart(d3.select(chartEl), fips);
 }
 
 
@@ -249,7 +246,9 @@ function drawLollipopChart(box, fips) {
     const initialRecourse = recourseResults.find(r => r.instance_idx === instanceIdx);
 
     if (!initialRecourse) {
-        box.html(`<p>No baseline recourse data for FIPS ${fips}</p>`);
+        const fipsData = getDataForFips(fips);
+        const location = fipsData ? `${fipsData["County_Name"]}, ${fipsData["State"]}` : fips;
+        box.html(`<p>No baseline recourse data for ${location}</p>`);
         userInputContainer.html("");
         return;
     }
