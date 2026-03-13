@@ -124,8 +124,9 @@ main {
 
 .side-charts {
   flex: 1 1 auto;
-  display: grid;
-  grid-template-rows: 45% 55%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   gap: var(--pad);
 }
 
@@ -572,7 +573,7 @@ svg [tabindex="0"]:focus{
   border-radius:6px;
   white-space:nowrap;
   opacity:0;
-  transition:opacity .12s;
+  transition:opacity .12s, background-color .12s, color .12s;
 }
 
 /* ------- toast ------- */
@@ -677,12 +678,7 @@ svg [tabindex="0"]:focus{
   grid-template-columns: 55% 45%;
   grid-template-rows: 1fr;
 }
-/* 1) Flex layout for the bar + controls */
-.side-charts {
-  display: flex;
-  flex-direction: column;
-  height: 100%;         /* fill parent */
-}
+/* side-charts flex layout is defined above */
 #bar-container {
   display: flex;
   flex-direction: column;
@@ -841,11 +837,13 @@ header .controls{
   display: block;
 }
 
-/* 4) Bar chart wrapper scrolls; SVG grows to fit content */
+/* 4) Bar chart wrapper: flex column so #bar can inherit full height */
 #bar-wrapper {
   flex: 1;
   min-height: 200px;
   overflow: auto;
+  display: flex;
+  flex-direction: column;
   background: rgba(255,255,255,0.95);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -855,6 +853,7 @@ header .controls{
   display: block;
   min-width: 480px;
   width: 100%;
+  flex: 1; /* fill wrapper height so clientHeight is readable by D3 */
 }
 
 /* ensure charts fill their grid cells */
@@ -1011,6 +1010,3 @@ header .controls{
   margin-right: 0.4rem;
   border:       1px solid #ccc;
 }
-
-
-

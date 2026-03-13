@@ -11,6 +11,15 @@ import { getCountyTopoData, getDataFeatures, getDataForFips, getNriData } from '
 // Module-level variables
 const tooltip = d3.select("#tip");
 
+// Returns white or black depending on which contrasts better with a hex color
+function contrastColor(hex) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.55 ? "#000" : "#fff";
+}
+
 /**
  * Initializes the Map module.
  */
@@ -98,11 +107,16 @@ function drawMapDefault() {
         .on("mouseover", (e, d) => {
             const fips = String(d.id).padStart(5, '0');
             const count = countMap.get(fips) || 0;
-            
-            // Show, position, and set content all in one step
+            const fillColor = d3.select(e.currentTarget).attr("fill");
+            const textColor = contrastColor(fillColor);
+            const fipsData = getDataForFips(fips);
+            const name = fipsData ? `${fipsData["County_Name"]}, ${fipsData["State"]}` : fips;
+
             tooltip
                 .style("opacity", 0.9)
-                .html(`<strong>FIPS ${fips}</strong><br>${count} record(s)`)
+                .style("background-color", fillColor)
+                .style("color", textColor)
+                .html(`<strong>${name}</strong><br>${count} record(s)`)
                 .style("left", (e.pageX + 10) + "px")
                 .style("top",  (e.pageY - 28) + "px");
 
@@ -139,9 +153,38 @@ function drawMapNRI() {
             return rating ? colorRamp(rating) : "#eee";
         })
         .attr("stroke", "#999")
+        .attr("stroke-width", 1)
         .on("click", (e, d) => {
             const fips = String(d.id).padStart(5, "0");
-            setState('selectedFips', fips); // Update central state
+            setState('selectedFips', fips);
+            const fipsData = getDataForFips(fips);
+            if (fipsData) {
+                d3.select("#county_selected_text").text(`Selected: ${fipsData["County_Name"]}, ${fipsData["State"]}`);
+            } else {
+                d3.select("#county_selected_text").text(`No data available`);
+            }
+        })
+        .on("mouseover", (e, d) => {
+            const fips = String(d.id).padStart(5, "0");
+            const rating = nriMap.get(fips) || "unknown";
+            const fillColor = d3.select(e.currentTarget).attr("fill");
+            const textColor = contrastColor(fillColor);
+            const fipsData = getDataForFips(fips);
+            const name = fipsData ? `${fipsData["County_Name"]}, ${fipsData["State"]}` : fips;
+
+            tooltip
+                .style("opacity", 0.9)
+                .style("background-color", fillColor)
+                .style("color", textColor)
+                .html(`<strong>${name}</strong><br>NRI: ${rating}`)
+                .style("left", (e.pageX + 10) + "px")
+                .style("top",  (e.pageY - 28) + "px");
+
+            d3.select(e.currentTarget).attr("stroke", "#000").attr("stroke-width", 2);
+        })
+        .on("mouseout", (e) => {
+            tooltip.style("opacity", 0);
+            d3.select(e.currentTarget).attr("stroke", "#999").attr("stroke-width", 1);
         });
 }
 

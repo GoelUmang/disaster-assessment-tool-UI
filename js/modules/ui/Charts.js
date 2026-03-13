@@ -26,6 +26,11 @@ import {
 let activeChartType = 'instance'; // Default chart to show
 const tooltip = d3.select("#tip"); // Shared tooltip element
 
+function locationLabel(fips) {
+    const d = getDataForFips(fips);
+    return d ? `${d["County_Name"]}, ${d["State"]}` : fips;
+}
+
 /**
  * Initializes the Charts module. Sets up event listeners for UI controls.
  */
@@ -100,22 +105,26 @@ function drawEnrichedInstanceBar(svg, fips) {
 
     const margin = { top: 40, right: 40, bottom: 80, left: 180 };
     const BAR_H = 28;
-    const W = Math.max(svg.node().parentElement.clientWidth || 0, 480);
+    const parent = svg.node().parentElement;
+    const W = Math.max(parent.clientWidth || 0, 480);
 
     if (!row) {
         const H = 200;
         svg.attr("width", W).attr("height", H);
-        svg.append("text").attr("x", W/2).attr("y", H/2).attr("text-anchor","middle").style("fill","darkred").text(`No instance data for FIPS ${fips}`);
+        svg.append("text").attr("x", W/2).attr("y", H/2).attr("text-anchor","middle").style("fill","darkred").text(`No instance data for ${locationLabel(fips)}`);
         return;
     }
 
     const feats = Object.keys(row)
-        .filter(k => k !== 'FIPS')
+        .filter(k => k !== 'FIPS' && k.toLowerCase() !== 'index')
         .map(k => ({ feature: k, value: +row[k] }))
         .sort((a, b) => b.value - a.value)
         .slice(0, 15);
 
-    const H = margin.top + margin.bottom + feats.length * BAR_H;
+    const naturalH = margin.top + margin.bottom + feats.length * BAR_H;
+    const wrapper = document.getElementById('bar-wrapper');
+    const containerH = (wrapper && wrapper.clientHeight > 0) ? wrapper.clientHeight : 0;
+    const H = containerH > naturalH ? containerH : naturalH;
     svg.attr("width", W).attr("height", H);
 
     const innerW = W - margin.left - margin.right;
@@ -128,7 +137,7 @@ function drawEnrichedInstanceBar(svg, fips) {
         .selectAll("text").attr("transform", "rotate(-40)").style("text-anchor", "end").attr("dx", "-.5em").attr("dy", ".5em");
     svg.append("g").attr("transform", `translate(${margin.left},0)`).call(d3.axisLeft(y));
 
-    svg.append("text").attr("x", W/2).attr("y", margin.top/2).attr("text-anchor","middle").style("font-weight",600).text(`Top 15 Features for FIPS ${fips}`);
+    svg.append("text").attr("x", W/2).attr("y", margin.top/2).attr("text-anchor","middle").style("font-weight",600).text(`Top 15 Features for ${locationLabel(fips)}`);
 
     svg.selectAll("rect").data(feats).join("rect")
         .attr("x", margin.left)
@@ -149,18 +158,33 @@ function drawEnrichedGroupBar(svg, fips) {
 
     const margin = { top: 40, right: 40, bottom: 80, left: 210 };
     const BAR_H = 30;
-    const W = Math.max(svg.node().parentElement.clientWidth || 0, 480);
+    const parent = svg.node().parentElement;
+    const W = Math.max(parent.clientWidth || 0, 480);
 
     if (!row) {
         const H = 200;
         svg.attr("width", W).attr("height", H);
-        svg.append("text").attr("x", W/2).attr("y", H/2).attr("text-anchor","middle").style("fill","darkred").text(`No group data for FIPS ${fips}`);
+        svg.append("text").attr("x", W/2).attr("y", H/2).attr("text-anchor","middle").style("fill","darkred").text(`No group data for ${locationLabel(fips)}`);
         return;
     }
 
-    const groups = Object.keys(row).filter(k => k !== 'FIPS').map(k => ({ feature: k, value: +row[k] }));
+    const FEATURE_GROUP_COLUMNS = [
+        'necessity_Agricultural Loss',
+        'necessity_Flood & Water Surface Increase',
+        'necessity_Infrastructural Damage',
+        'necessity_Mobility & Access Disruption',
+        'necessity_Other Indicators',
+        'necessity_Vegetation Loss',
+    ];
 
-    const H = margin.top + margin.bottom + groups.length * BAR_H;
+    const groups = FEATURE_GROUP_COLUMNS
+        .filter(k => k in row)
+        .map(k => ({ feature: k, value: +row[k] }));
+
+    const naturalH = margin.top + margin.bottom + groups.length * BAR_H;
+    const wrapper = document.getElementById('bar-wrapper');
+    const containerH = (wrapper && wrapper.clientHeight > 0) ? wrapper.clientHeight : 0;
+    const H = containerH > naturalH ? containerH : naturalH;
     svg.attr("width", W).attr("height", H);
 
     const innerW = W - margin.left - margin.right;
@@ -173,7 +197,7 @@ function drawEnrichedGroupBar(svg, fips) {
         .selectAll("text").attr("transform", "rotate(-40)").style("text-anchor", "end").attr("dx", "-.5em").attr("dy", ".5em");
     svg.append("g").attr("transform", `translate(${margin.left},0)`).call(d3.axisLeft(y));
 
-    svg.append("text").attr("x", W/2).attr("y", margin.top/2).attr("text-anchor","middle").style("font-weight",600).text(`Feature-Group Scores for FIPS ${fips}`);
+    svg.append("text").attr("x", W/2).attr("y", margin.top/2).attr("text-anchor","middle").style("font-weight",600).text(`Feature-Group Scores for ${locationLabel(fips)}`);
 
     svg.selectAll("rect").data(groups).join("rect")
         .attr("x", margin.left)
@@ -194,18 +218,30 @@ function drawEnrichedSourceBar(svg, fips) {
 
     const margin = { top: 40, right: 40, bottom: 80, left: 130 };
     const BAR_H = 30;
-    const W = Math.max(svg.node().parentElement.clientWidth || 0, 480);
+    const parent = svg.node().parentElement;
+    const W = Math.max(parent.clientWidth || 0, 480);
 
     if (!row) {
         const H = 200;
         svg.attr("width", W).attr("height", H);
-        svg.append("text").attr("x", W/2).attr("y", H/2).attr("text-anchor","middle").style("fill","darkred").text(`No source data for FIPS ${fips}`);
+        svg.append("text").attr("x", W/2).attr("y", H/2).attr("text-anchor","middle").style("fill","darkred").text(`No source data for ${locationLabel(fips)}`);
         return;
     }
 
-    const sources = Object.keys(row).filter(k => k !== 'FIPS').map(k => ({ label: k, value: +row[k] }));
+    const SOURCE_COLUMNS = [
+        'necessity_Transition',
+        'necessity_Reddit',
+        'necessity_News',
+    ];
 
-    const H = margin.top + margin.bottom + sources.length * BAR_H;
+    const sources = SOURCE_COLUMNS
+        .filter(k => k in row)
+        .map(k => ({ label: k, value: +row[k] }));
+
+    const naturalH = margin.top + margin.bottom + sources.length * BAR_H;
+    const wrapper = document.getElementById('bar-wrapper');
+    const containerH = (wrapper && wrapper.clientHeight > 0) ? wrapper.clientHeight : 0;
+    const H = containerH > naturalH ? containerH : naturalH;
     svg.attr("width", W).attr("height", H);
 
     const innerW = W - margin.left - margin.right;
@@ -218,7 +254,7 @@ function drawEnrichedSourceBar(svg, fips) {
         .selectAll("text").attr("transform", "rotate(-40)").style("text-anchor", "end").attr("dx", "-.5em").attr("dy", ".5em");
     svg.append("g").attr("transform", `translate(${margin.left},0)`).call(d3.axisLeft(y));
 
-    svg.append("text").attr("x", W/2).attr("y", margin.top/2).attr("text-anchor","middle").style("font-weight",600).text(`Source Necessity for FIPS ${fips}`);
+    svg.append("text").attr("x", W/2).attr("y", margin.top/2).attr("text-anchor","middle").style("font-weight",600).text(`Source Necessity for ${locationLabel(fips)}`);
 
     svg.selectAll("rect").data(sources).join("rect")
         .attr("x", margin.left)
@@ -278,7 +314,7 @@ function drawLollipopChart(box, fips) {
         );
 
         if (!rec?.changed_features?.length) {
-            box.html(`<p>No counterfactual data for FIPS ${fips} at "${userLvl}" severity</p>`);
+            box.html(`<p>No counterfactual data for ${locationLabel(fips)} at "${userLvl}" severity</p>`);
             return;
         }
 
@@ -378,7 +414,7 @@ function drawLollipopChart(box, fips) {
             .attr("text-anchor", "middle")
             .attr("font-size", "1.05rem")
             .attr("font-weight", 600)
-            .text(`Algorithmic Recourse for FIPS ${fips}`);
+            .text(`Algorithmic Recourse for ${locationLabel(fips)}`);
 
         // Legend
         const legendData = [
