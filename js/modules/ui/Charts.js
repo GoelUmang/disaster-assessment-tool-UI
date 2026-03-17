@@ -139,12 +139,22 @@ function drawEnrichedInstanceBar(svg, fips) {
 
     svg.append("text").attr("x", W/2).attr("y", margin.top/2).attr("text-anchor","middle").style("font-weight",600).text(`Top 15 Features for ${locationLabel(fips)}`);
 
+    const label = locationLabel(fips);
     svg.selectAll("rect").data(feats).join("rect")
         .attr("x", margin.left)
         .attr("y", d => y(d.feature))
         .attr("width", d => x(d.value) - margin.left)
         .attr("height", y.bandwidth())
-        .attr("fill", "#3182bd");
+        .attr("fill", "#3182bd")
+        .style("cursor", "default")
+        .on("mouseover", (e, d) => tooltip
+            .style("opacity", 0.9)
+            .style("background-color", "#3182bd")
+            .style("color", "#fff")
+            .html(`<strong>${label}</strong><br>${d.feature}: ${d3.format(".3f")(d.value)}`)
+            .style("left", `${e.pageX + 8}px`)
+            .style("top", `${e.pageY - 28}px`))
+        .on("mouseout", () => tooltip.style("opacity", 0));
 }
 
 /**
@@ -199,12 +209,22 @@ function drawEnrichedGroupBar(svg, fips) {
 
     svg.append("text").attr("x", W/2).attr("y", margin.top/2).attr("text-anchor","middle").style("font-weight",600).text(`Feature-Group Scores for ${locationLabel(fips)}`);
 
+    const label = locationLabel(fips);
     svg.selectAll("rect").data(groups).join("rect")
         .attr("x", margin.left)
         .attr("y", d => y(d.feature))
         .attr("width", d => x(d.value) - margin.left)
         .attr("height", y.bandwidth())
-        .attr("fill", "#3182bd");
+        .attr("fill", "#3182bd")
+        .style("cursor", "default")
+        .on("mouseover", (e, d) => tooltip
+            .style("opacity", 0.9)
+            .style("background-color", "#3182bd")
+            .style("color", "#fff")
+            .html(`<strong>${label}</strong><br>${d.feature}: ${d3.format(".3f")(d.value)}`)
+            .style("left", `${e.pageX + 8}px`)
+            .style("top", `${e.pageY - 28}px`))
+        .on("mouseout", () => tooltip.style("opacity", 0));
 }
 
 /**
@@ -256,12 +276,22 @@ function drawEnrichedSourceBar(svg, fips) {
 
     svg.append("text").attr("x", W/2).attr("y", margin.top/2).attr("text-anchor","middle").style("font-weight",600).text(`Source Necessity for ${locationLabel(fips)}`);
 
+    const label = locationLabel(fips);
     svg.selectAll("rect").data(sources).join("rect")
         .attr("x", margin.left)
         .attr("y", d => y(d.label))
         .attr("width", d => x(d.value) - margin.left)
         .attr("height", y.bandwidth())
-        .attr("fill", "#3182bd");
+        .attr("fill", "#3182bd")
+        .style("cursor", "default")
+        .on("mouseover", (e, d) => tooltip
+            .style("opacity", 0.9)
+            .style("background-color", "#3182bd")
+            .style("color", "#fff")
+            .html(`<strong>${label}</strong><br>${d.label}: ${d3.format(".3f")(d.value)}`)
+            .style("left", `${e.pageX + 8}px`)
+            .style("top", `${e.pageY - 28}px`))
+        .on("mouseout", () => tooltip.style("opacity", 0));
 }
 
 

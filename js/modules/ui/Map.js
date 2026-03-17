@@ -108,14 +108,14 @@ function drawMapDefault() {
             const fips = String(d.id).padStart(5, '0');
             const count = countMap.get(fips) || 0;
             const fillColor = d3.select(e.currentTarget).attr("fill");
-            const textColor = contrastColor(fillColor);
+            const bgColor = contrastColor(fillColor) === "#fff" ? fillColor : "#555555";
             const fipsData = getDataForFips(fips);
             const name = fipsData ? `${fipsData["County_Name"]}, ${fipsData["State"]}` : fips;
 
             tooltip
                 .style("opacity", 0.9)
-                .style("background-color", fillColor)
-                .style("color", textColor)
+                .style("background-color", bgColor)
+                .style("color", "#fff")
                 .html(`<strong>${name}</strong><br>${count} record(s)`)
                 .style("left", (e.pageX + 10) + "px")
                 .style("top",  (e.pageY - 28) + "px");
@@ -168,14 +168,14 @@ function drawMapNRI() {
             const fips = String(d.id).padStart(5, "0");
             const rating = nriMap.get(fips) || "unknown";
             const fillColor = d3.select(e.currentTarget).attr("fill");
-            const textColor = contrastColor(fillColor);
+            const bgColor = contrastColor(fillColor) === "#fff" ? fillColor : "#555555";
             const fipsData = getDataForFips(fips);
             const name = fipsData ? `${fipsData["County_Name"]}, ${fipsData["State"]}` : fips;
 
             tooltip
                 .style("opacity", 0.9)
-                .style("background-color", fillColor)
-                .style("color", textColor)
+                .style("background-color", bgColor)
+                .style("color", "#fff")
                 .html(`<strong>${name}</strong><br>NRI: ${rating}`)
                 .style("left", (e.pageX + 10) + "px")
                 .style("top",  (e.pageY - 28) + "px");
