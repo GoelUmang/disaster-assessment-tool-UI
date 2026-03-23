@@ -18,7 +18,6 @@ import {
     getGroupNecessityData,
     getSourceNecessityData,
     getRecourseData,
-    getFipsToInstanceMap,
     getDataForFips
 } from '../services/DataManager.js';
 
@@ -307,17 +306,28 @@ function drawLollipopChart(box, fips) {
     box.html(""); // Clear previous chart
 
     const recourseResults = getRecourseData();
-    const fipsToIdxMap = getFipsToInstanceMap();
-    const instanceIdx = fipsToIdxMap.get(String(fips).padStart(5, '0'));
-    const initialRecourse = recourseResults.find(r => r.instance_idx === instanceIdx);
+    const initialRecourse = recourseResults.find(r => String(r.FIPS).padStart(5, '0') === fips);
 
     if (!initialRecourse) {
         const fipsData = getDataForFips(fips);
         const location = fipsData ? `${fipsData["County_Name"]}, ${fipsData["State"]}` : fips;
         box.html(`<p>No baseline recourse data for ${location}</p>`);
         userInputContainer.html("");
+        const instanceDataBox = d3.select("#instance-data");
+        if (!instanceDataBox.empty()) instanceDataBox.selectAll("p").remove();
         return;
     }
+
+    // Populate #instance-data with the county's current severity
+    const severityLabels = ["low", "medium", "high"];
+    const instanceDataBox = d3.select("#instance-data");
+    if (!instanceDataBox.empty()) {
+        instanceDataBox.selectAll("p").remove();
+        instanceDataBox.append("p")
+            .text(`Severity: ${severityLabels[initialRecourse.original_prediction]}`);
+    }
+
+    const instanceIdx = initialRecourse.instance_idx;
 
     // --- Create Severity Dropdown ---
     userInputContainer.append("label").attr("for", "severity-select").text("Set severity: ");
@@ -349,14 +359,15 @@ function drawLollipopChart(box, fips) {
         }
 
         const top5 = rec.changed_features;
-        const W = box.node().clientWidth || 420;
-        const H = Math.max(box.node().clientHeight, 240);
-        const m = { t: 40, r: 30, b: 40, l: 110 };
+        const ROW_H = 55;
+        const maxLabelLen = Math.max(...top5.map(d => d.feature.length));
+        const m = { t: 40, r: 40, b: 80, l: Math.max(120, maxLabelLen * 7) };
+        const W = Math.max(box.node().clientWidth || 0, 420);
+        const H = m.t + m.b + top5.length * ROW_H;
 
         const svg = box.append("svg")
-            .attr("viewBox", `0 0 ${W} ${H}`)
-            .attr("width", "100%")
-            .attr("height", "100%");
+            .attr("width", W)
+            .attr("height", H);
 
         // Scales & axes
         const rawMax = d3.max(top5, d => Math.max(d.original, d.cf));
@@ -366,12 +377,17 @@ function drawLollipopChart(box, fips) {
 
         const y = d3.scaleBand()
             .domain(top5.map(d => d.feature))
-            .range([m.t - 10, H - m.b + 10])
+            .range([m.t, H - m.b])
             .padding(0.5);
 
         svg.append("g")
             .attr("transform", `translate(0,${H - m.b})`)
-            .call(d3.axisBottom(x).ticks(6));
+            .call(d3.axisBottom(x).ticks(6).tickFormat(d3.format(".2f")))
+            .selectAll("text")
+            .attr("transform", "rotate(-40)")
+            .style("text-anchor", "end")
+            .attr("dx", "-.5em")
+            .attr("dy", ".5em");
 
         svg.append("g")
             .attr("transform", `translate(${m.l},0)`)
@@ -417,6 +433,8 @@ function drawLollipopChart(box, fips) {
             .attr("fill", "#000")
             .on("mouseover", (e, d) => tooltip
                 .style("opacity", 0.9)
+                .style("background-color", "#000")
+                .style("color", "#fff")
                 .html(tip(`${d.feature} (current)`, d.original))
                 .style("left", `${e.pageX + 8}px`)
                 .style("top", `${e.pageY - 28}px`))
@@ -433,6 +451,8 @@ function drawLollipopChart(box, fips) {
             .attr("fill", "#e41a1c")
             .on("mouseover", (e, d) => tooltip
                 .style("opacity", 0.9)
+                .style("background-color", "#e41a1c")
+                .style("color", "#fff")
                 .html(tip(`${d.feature} (user input)`, d.cf))
                 .style("left", `${e.pageX + 8}px`)
                 .style("top", `${e.pageY - 28}px`))
@@ -440,7 +460,7 @@ function drawLollipopChart(box, fips) {
 
         // Title
         svg.append("text")
-            .attr("x", W / 2).attr("y", m.t - 18)
+            .attr("x", W / 2).attr("y", m.t / 2)
             .attr("text-anchor", "middle")
             .attr("font-size", "1.05rem")
             .attr("font-weight", 600)

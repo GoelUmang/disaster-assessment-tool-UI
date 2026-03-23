@@ -128,6 +128,7 @@ main {
   flex-direction: column;
   height: 100%;
   gap: var(--pad);
+  padding-right: var(--pad);
 }
 
 /* ------- typography ------- */
@@ -884,7 +885,11 @@ header .controls{
   grid-column:1 / 3;   /* start in col-1, span through col-2 */
   grid-row:3;          /* row-3 downwards; 1fr row fills height */
   width:95%;
-  height:100%;
+  min-height: 200px;   /* fixed placeholder when no county selected */
+  background: rgba(255,255,255,0.95);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: auto;
 }
 /* ─── keep the “Edit Feature” box the same width as Instance Data ─── */
 #user-input{
